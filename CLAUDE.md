@@ -29,16 +29,16 @@ Avisa-me se um pedido parecer fora do MVP.
 
 ## Comandos
 
-Os comandos do backend correm na pasta `backend/`, com o ambiente virtual ativo (`source .venv/bin/activate`). O Postgres de dev corre em Docker, a partir da raiz do projeto.
+Os comandos do backend correm na pasta `backend/`, com o ambiente virtual ativo (`source .venv/bin/activate`). O Postgres de dev corre em Docker, a partir da raiz do projeto. Os comandos do frontend correm na pasta `frontend/`.
 
 | Ação | Backend (`backend/`) | Frontend (`frontend/`) |
 | --- | --- | --- |
-| Instalar | `python -m venv .venv` + `pip install -r requirements.txt` + `cp .env.example .env` (gerar a `SECRET_KEY`) | a definir (tarefa 6) |
+| Instalar | `python -m venv .venv` + `pip install -r requirements.txt` + `cp .env.example .env` (gerar a `SECRET_KEY`) | `npm install` |
 | Base de dados (dev) | `docker compose -f docker-compose.dev.yml up -d` (na raiz) + `python manage.py migrate` | n/a |
-| Correr em dev | `python manage.py runserver` (`http://localhost:8000`, admin em `/admin/`) | a definir (tarefa 6) |
-| Testes | `python manage.py test` | a definir (tarefa 6) |
-| Linter / formatter | `ruff check .` + `ruff format .` | a definir (tarefa 6) |
-| Build | n/a | a definir (tarefa 6) |
+| Correr em dev | `python manage.py runserver` (`http://localhost:8000`, admin em `/admin/`) | `npm run dev` (`http://localhost:5173`) |
+| Testes | `python manage.py test` | a definir (Vitest, quando houver componentes) |
+| Linter / formatter | `ruff check .` + `ruff format .` | `npm run lint` + `npm run format` (verificar sem alterar: `npm run format:check`) |
+| Build | n/a | `npm run build` (gera `dist/`) |
 
 Notas:
 
@@ -51,7 +51,7 @@ Notas:
   - `config/`: settings, URLs, WSGI/ASGI (só configuração)
   - `accounts/`: `User` próprio e preferências
 - `docker-compose.dev.yml`: Postgres para desenvolvimento
-- `frontend/`: aplicação React
+- `frontend/`: aplicação React (Vite, JavaScript, ESLint, Prettier com tabs)
 - `docs/`: plano, ADRs, registo de horas
 
 ## Regras específicas deste projeto
