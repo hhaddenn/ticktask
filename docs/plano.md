@@ -1,4 +1,4 @@
-# Plano de implementação: taskManager
+# Plano de implementação: Ticktask
 
 ## Marcos
 
@@ -34,7 +34,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 2   | M0    | Escrever os ADRs 0001–0003                                                        |           | —          | 0.5h  | feito     |
 | 3   | M0    | Desenhar os modelos de dados (Projeto, Etapa, Tarefa, RegistoTempo…) para revisão |           | 2 h        | 0.25h | feito     |
 | 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      | 0.25h | feito     |
-| 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        |       | feito     |
+| 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        | 1.5h  | feito     |
 | 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        |       | por fazer |
 | 7   | M1    | Ligar o React à API: CORS em dev e um endpoint de teste                           |           | 2 h        |       | por fazer |
 | 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        |       | por fazer |

@@ -1,4 +1,4 @@
-# CLAUDE.md: taskManager
+# CLAUDE.md: Ticktask
 
 @~/Desktop/Projects/devHelper/CLAUDE.md
 

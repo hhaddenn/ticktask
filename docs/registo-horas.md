@@ -1,4 +1,4 @@
-# Registo de horas: taskManager
+# Registo de horas: Ticktask
 
 **Cliente:** pessoal
 **Início:** 2026-11-03 · **Fim:**

@@ -1,4 +1,4 @@
-# taskManager
+# Ticktask
 
 Aplicação pessoal para gerir projetos, tarefas e backlog, e registar o tempo gasto em cada tarefa.
 

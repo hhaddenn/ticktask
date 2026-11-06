@@ -1,4 +1,4 @@
-name: taskmanager-dev
+name: ticktask-dev
 services:
     db:
         image: postgres:17-alpine

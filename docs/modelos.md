@@ -1,4 +1,4 @@
-# Modelos de dados: taskManager (v1)
+# Modelos de dados: Ticktask (v1)
 
 Desenho dos modelos antes de os escrever em Django (tarefa 3 do [plano](plano.md)).
 Os nomes das classes e dos campos estão em inglês, como vão ficar no código. As explicações estão em português.
