@@ -17,22 +17,22 @@ M0 a M4 são o MVP. As tarefas de M3 em diante são mais grossas: parte-as em ta
 
 As estimativas deste plano são **preliminares**, feitas pelo Claude para dar uma ordem de grandeza (incluem tempo de aprendizagem de React e Django). Antes de começar cada tarefa, faz **a tua** estimativa e regista-a no [registo de horas](registo-horas.md): é essa que conta para o fator de correção, e não se altera depois. As tarefas 1 e 2 não foram estimadas antes de começar, por isso ficam sem estimativa.
 
-| Marco | Estimativa |
-| --- | --- |
-| M0 | 2 h (só a tarefa 3) |
-| M1 | 7,5 h |
-| M2 | 25 h |
-| M3 | 22 h |
-| M4 | 11 h |
-| **MVP (M0–M4)** | **67,5 h** |
-| M5 (Should) | 23 h |
-| **Total** | **90,5 h** |
+| Marco           | Estimativa          |
+| --------------- | ------------------- |
+| M0              | 2 h (só a tarefa 3) |
+| M1              | 7,5 h               |
+| M2              | 25 h                |
+| M3              | 22 h                |
+| M4              | 11 h                |
+| **MVP (M0–M4)** | **67,5 h**          |
+| M5 (Should)     | 23 h                |
+| **Total**       | **90,5 h**          |
 
 | #   | Marco | Tarefa                                                                            | Requisito | Estimativa | Real | Estado    |
 | --- | ----- | --------------------------------------------------------------------------------- | --------- | ---------- | ---- | --------- |
 | 1   | M0    | Fechar o README (MVP/Won't) e o CLAUDE.md                                         |           | —          |      | feito     |
 | 2   | M0    | Escrever os ADRs 0001–0003                                                        |           | —          |      | feito     |
-| 3   | M0    | Desenhar os modelos de dados (Projeto, Etapa, Tarefa, RegistoTempo…) para revisão |           | 2 h        |      | por fazer |
+| 3   | M0    | Desenhar os modelos de dados (Projeto, Etapa, Tarefa, RegistoTempo…) para revisão |           | 2 h        |      | feito     |
 | 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      |      | por fazer |
 | 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        |      | por fazer |
 | 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        |      | por fazer |
