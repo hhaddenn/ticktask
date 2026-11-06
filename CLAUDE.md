@@ -10,7 +10,7 @@ Os guias referidos nelas estão em ~/Desktop/Projects/devHelper/docs/.
 - **O que é:** gestão de projetos, tarefas e backlog (bugs e sugestões recebidos por email), com registo de horas e timer por tarefa. Vista kanban com drag and drop, inspirada no Odoo.
 - **Tipo:** pessoal
 - **Cliente:** nenhum, é para mim
-- **Estado:** requisitos
+- **Estado:** desenvolvimento (M1: setup)
 
 ## Âmbito (pessoal)
 
@@ -29,19 +29,28 @@ Avisa-me se um pedido parecer fora do MVP.
 
 ## Comandos
 
-A definir no setup (tarefas 4 e 5 do plano). Vai haver comandos separados para `backend/` e `frontend/`.
+Os comandos do backend correm na pasta `backend/`, com o ambiente virtual ativo (`source .venv/bin/activate`). O Postgres de dev corre em Docker, a partir da raiz do projeto.
 
-| Ação          | Backend (`backend/`) | Frontend (`frontend/`) |
-| ------------- | -------------------- | ---------------------- |
-| Instalar      | a definir            | a definir              |
-| Correr em dev | a definir            | a definir              |
-| Testes        | a definir            | a definir              |
-| Linter        | a definir            | a definir              |
-| Build         | n/a                  | a definir              |
+| Ação | Backend (`backend/`) | Frontend (`frontend/`) |
+| --- | --- | --- |
+| Instalar | `python -m venv .venv` + `pip install -r requirements.txt` + `cp .env.example .env` (gerar a `SECRET_KEY`) | a definir (tarefa 6) |
+| Base de dados (dev) | `docker compose -f docker-compose.dev.yml up -d` (na raiz) + `python manage.py migrate` | n/a |
+| Correr em dev | `python manage.py runserver` (`http://localhost:8000`, admin em `/admin/`) | a definir (tarefa 6) |
+| Testes | `python manage.py test` | a definir (tarefa 6) |
+| Linter / formatter | `ruff check .` + `ruff format .` | a definir (tarefa 6) |
+| Build | n/a | a definir (tarefa 6) |
+
+Notas:
+
+- O Postgres de dev está exposto na porta **5433** do PC (a 5432 está ocupada por um Postgres do sistema).
+- O contexto Docker de dev é o `desktop-linux` (Docker Desktop). Confirmar com `docker context ls` antes de comandos Docker: existe também um contexto `raspberry`.
 
 ## Estrutura
 
 - `backend/`: projeto Django (API)
+  - `config/`: settings, URLs, WSGI/ASGI (só configuração)
+  - `accounts/`: `User` próprio e preferências
+- `docker-compose.dev.yml`: Postgres para desenvolvimento
 - `frontend/`: aplicação React
 - `docs/`: plano, ADRs, registo de horas
 
