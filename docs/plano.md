@@ -36,7 +36,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      | 0.25h | feito     |
 | 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        | 1.5h  | feito     |
 | 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        | 1h    | feito     |
-| 7   | M1    | Ligar o React à API: CORS em dev e um endpoint de teste                           |           | 2 h        |       | por fazer |
+| 7   | M1    | Ligar o React à API: proxy do Vite (ADR 0004) e um endpoint de teste                           |           | 2 h        |       | por fazer |
 | 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        |       | por fazer |
 | 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        |       | por fazer |
 | 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        |       | por fazer |

@@ -46,7 +46,7 @@ Não tenho um sítio único para os meus projetos e tarefas, para os bugs e suge
 ## Fases futuras
 
 1. **Utilizadores:** contas na app. Cada projeto já tem um dono (`owner`) desde a v1, para não ter de refazer o modelo.
-2. **SSO com a app de finanças:** contas partilhadas entre as apps, com contas próprias e login Google como opção. Decisão a registar num ADR 0004.
+2. **SSO com a app de finanças:** contas partilhadas entre as apps, com contas próprias e login Google como opção. Decisão a registar num ADR próprio.
 3. **Tickets vindos de outras apps:** os forms de bugs e sugestões das minhas apps criam entradas no backlog através de um endpoint da API (ex: `POST /api/tickets/`), com uma chave por app.
 
 ## Decisões tomadas
