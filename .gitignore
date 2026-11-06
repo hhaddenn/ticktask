@@ -1,0 +1,45 @@
+# --- Segredos ---
+# Variáveis de ambiente com passwords e chaves. Nunca no repo.
+.env
+.env.*
+# Exceção: o exemplo, sem valores reais, vai para o repo.
+!.env.example
+
+# --- Python / Django (backend/) ---
+# Ambientes virtuais
+.venv/
+venv/
+# Cache e bytecode
+__pycache__/
+*.py[cod]
+# Ferramentas de teste e linter
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+# Gerados pelo Django
+staticfiles/
+media/
+# Base de dados local, caso se use SQLite num teste rápido
+*.sqlite3
+
+# --- Node / React (frontend/) ---
+node_modules/
+# Build (Vite usa dist/, Create React App usa build/)
+dist/
+build/
+# Logs do npm
+npm-debug.log*
+
+# --- Editor e sistema ---
+# Definições pessoais do VS Code; as recomendações de extensões podem ir para o repo
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Logs gerais ---
+*.log

@@ -28,41 +28,41 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | M5 (Should)     | 23 h                |
 | **Total**       | **90,5 h**          |
 
-| #   | Marco | Tarefa                                                                            | Requisito | Estimativa | Real | Estado    |
-| --- | ----- | --------------------------------------------------------------------------------- | --------- | ---------- | ---- | --------- |
-| 1   | M0    | Fechar o README (MVP/Won't) e o CLAUDE.md                                         |           | —          |      | feito     |
-| 2   | M0    | Escrever os ADRs 0001–0003                                                        |           | —          |      | feito     |
-| 3   | M0    | Desenhar os modelos de dados (Projeto, Etapa, Tarefa, RegistoTempo…) para revisão |           | 2 h        |      | feito     |
-| 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      |      | por fazer |
-| 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        |      | por fazer |
-| 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        |      | por fazer |
-| 7   | M1    | Ligar o React à API: CORS em dev e um endpoint de teste                           |           | 2 h        |      | por fazer |
-| 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        |      | por fazer |
-| 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        |      | por fazer |
-| 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        |      | por fazer |
-| 11  | M2    | React: lista de projetos e formulário                                             | Must      | 3 h        |      | por fazer |
-| 12  | M2    | React: vista kanban (colunas e cartões, sem drag and drop)                        | Must      | 4 h        |      | por fazer |
-| 13  | M2    | Protótipo isolado de drag and drop                                                | Must      | 3 h        |      | por fazer |
-| 14  | M2    | Drag and drop no kanban, com a ordem guardada na API                              | Must      | 4 h        |      | por fazer |
-| 15  | M2    | Descrição em texto simples no projeto e na tarefa                                 | Must      | 1 h        |      | por fazer |
-| 16  | M3    | Modelos de registo de tempo e sessão, com a regra "um timer ativo"                | Must      | 3 h        |      | por fazer |
-| 17  | M3    | API do timer: start, pause, resume, stop                                          | Must      | 4 h        |      | por fazer |
-| 18  | M3    | Arredondamento no stop, com testes                                                | Must      | 2 h        |      | por fazer |
-| 19  | M3    | React: timer na tarefa (contagem a partir do servidor)                            | Must      | 4 h        |      | por fazer |
-| 20  | M3    | Aviso de timer ativo noutra tarefa                                                | Must      | 2 h        |      | por fazer |
-| 21  | M3    | Aviso de sessão esquecida                                                         | Must      | 2 h        |      | por fazer |
-| 22  | M3    | Registos de tempo manuais                                                         | Must      | 2 h        |      | por fazer |
-| 23  | M3    | Totais de horas por tarefa e por projeto                                          | Must      | 2 h        |      | por fazer |
-| 24  | M3    | Preferências: bloco de arredondamento                                             | Must      | 1 h        |      | por fazer |
-| 25  | M4    | Dockerfiles do backend e do frontend (`arm64`)                                    |           | 4 h        |      | por fazer |
-| 26  | M4    | Docker Compose e stack no Komodo                                                  |           | 3 h        |      | por fazer |
-| 27  | M4    | Cloudflare tunnel                                                                 |           | 2 h        |      | por fazer |
-| 28  | M4    | Backup automático do Postgres                                                     |           | 2 h        |      | por fazer |
-| 29  | M5    | Pomodoro: preferências, estados e notificações                                    | Should    | 8 h        |      | por fazer |
-| 30  | M5    | Markdown estilo GitHub nas descrições                                             | Should    | 2 h        |      | por fazer |
-| 31  | M5    | Separador Documentos                                                              | Should    | 4 h        |      | por fazer |
-| 32  | M5    | Backlog: tarefas do tipo bug / sugestão                                           | Should    | 3 h        |      | por fazer |
-| 33  | M5    | Data limite e serviço `scheduler` com email de aviso                              | Should    | 6 h        |      | por fazer |
+| #   | Marco | Tarefa                                                                            | Requisito | Estimativa | Real  | Estado    |
+| --- | ----- | --------------------------------------------------------------------------------- | --------- | ---------- | ----- | --------- |
+| 1   | M0    | Fechar o README (MVP/Won't) e o CLAUDE.md                                         |           | —          | 0.5h  | feito     |
+| 2   | M0    | Escrever os ADRs 0001–0003                                                        |           | —          | 0.5h  | feito     |
+| 3   | M0    | Desenhar os modelos de dados (Projeto, Etapa, Tarefa, RegistoTempo…) para revisão |           | 2 h        | 0.25h | feito     |
+| 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      | 0.25h | por fazer |
+| 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        |       | por fazer |
+| 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        |       | por fazer |
+| 7   | M1    | Ligar o React à API: CORS em dev e um endpoint de teste                           |           | 2 h        |       | por fazer |
+| 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        |       | por fazer |
+| 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        |       | por fazer |
+| 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        |       | por fazer |
+| 11  | M2    | React: lista de projetos e formulário                                             | Must      | 3 h        |       | por fazer |
+| 12  | M2    | React: vista kanban (colunas e cartões, sem drag and drop)                        | Must      | 4 h        |       | por fazer |
+| 13  | M2    | Protótipo isolado de drag and drop                                                | Must      | 3 h        |       | por fazer |
+| 14  | M2    | Drag and drop no kanban, com a ordem guardada na API                              | Must      | 4 h        |       | por fazer |
+| 15  | M2    | Descrição em texto simples no projeto e na tarefa                                 | Must      | 1 h        |       | por fazer |
+| 16  | M3    | Modelos de registo de tempo e sessão, com a regra "um timer ativo"                | Must      | 3 h        |       | por fazer |
+| 17  | M3    | API do timer: start, pause, resume, stop                                          | Must      | 4 h        |       | por fazer |
+| 18  | M3    | Arredondamento no stop, com testes                                                | Must      | 2 h        |       | por fazer |
+| 19  | M3    | React: timer na tarefa (contagem a partir do servidor)                            | Must      | 4 h        |       | por fazer |
+| 20  | M3    | Aviso de timer ativo noutra tarefa                                                | Must      | 2 h        |       | por fazer |
+| 21  | M3    | Aviso de sessão esquecida                                                         | Must      | 2 h        |       | por fazer |
+| 22  | M3    | Registos de tempo manuais                                                         | Must      | 2 h        |       | por fazer |
+| 23  | M3    | Totais de horas por tarefa e por projeto                                          | Must      | 2 h        |       | por fazer |
+| 24  | M3    | Preferências: bloco de arredondamento                                             | Must      | 1 h        |       | por fazer |
+| 25  | M4    | Dockerfiles do backend e do frontend (`arm64`)                                    |           | 4 h        |       | por fazer |
+| 26  | M4    | Docker Compose e stack no Komodo                                                  |           | 3 h        |       | por fazer |
+| 27  | M4    | Cloudflare tunnel                                                                 |           | 2 h        |       | por fazer |
+| 28  | M4    | Backup automático do Postgres                                                     |           | 2 h        |       | por fazer |
+| 29  | M5    | Pomodoro: preferências, estados e notificações                                    | Should    | 8 h        |       | por fazer |
+| 30  | M5    | Markdown estilo GitHub nas descrições                                             | Should    | 2 h        |       | por fazer |
+| 31  | M5    | Separador Documentos                                                              | Should    | 4 h        |       | por fazer |
+| 32  | M5    | Backlog: tarefas do tipo bug / sugestão                                           | Should    | 3 h        |       | por fazer |
+| 33  | M5    | Data limite e serviço `scheduler` com email de aviso                              | Should    | 6 h        |       | por fazer |
 
 ## Riscos
 
