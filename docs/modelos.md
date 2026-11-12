@@ -217,4 +217,5 @@ O modelo não impede o que vem depois:
 
 - **Pausa do pomodoro:** guardada em `TimeEntry.break_ends_at`, para sobreviver a um recarregar da página ou a um problema no browser.
 - **`estimated_minutes`:** fica.
+- **Estimativa em pomodoros:** não há campo próprio. O frontend introduz e mostra `estimated_minutes` em pomodoros (`estimated_minutes / pomodoro_focus_minutes`, arredondado para cima). Os pomodoros feitos são os intervalos de foco completos da tarefa. Assim há uma só estimativa, que também serve para o timer normal.
 - **Fuso horário:** `USE_TZ = True` e `TIME_ZONE = "Europe/Lisbon"`. Tudo guardado em UTC; `TimeEntry.date` calculado na hora de Lisboa.

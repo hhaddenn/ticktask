@@ -1,3 +1,5 @@
+vi um s
+
 # Plano de implementação: Ticktask
 
 ## Marcos
@@ -25,8 +27,8 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | M3              | 22 h                |
 | M4              | 11 h                |
 | **MVP (M0–M4)** | **67,5 h**          |
-| M5 (Should)     | 23 h                |
-| **Total**       | **90,5 h**          |
+| M5 (Should)     | 25 h                |
+| **Total**       | **92,5 h**          |
 
 | #   | Marco | Tarefa                                                                            | Requisito | Estimativa | Real  | Estado    |
 | --- | ----- | --------------------------------------------------------------------------------- | --------- | ---------- | ----- | --------- |
@@ -36,7 +38,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 4   | M1    | `.gitignore` (venv, `node_modules`, `.env`, `__pycache__`, builds)                |           | 0,5 h      | 0.25h | feito     |
 | 5   | M1    | Setup do backend: Django, DRF, Postgres, `.env.example`, linter                   |           | 3 h        | 1.5h  | feito     |
 | 6   | M1    | Setup do frontend: React, linter e formatter                                      |           | 2 h        | 1h    | feito     |
-| 7   | M1    | Ligar o React à API: proxy do Vite (ADR 0004) e um endpoint de teste                           |           | 2 h        |       | por fazer |
+| 7   | M1    | Ligar o React à API: proxy do Vite (ADR 0004) e um endpoint de teste              |           | 2 h        | 1.25h | feito     |
 | 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        |       | por fazer |
 | 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        |       | por fazer |
 | 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        |       | por fazer |
@@ -63,6 +65,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 31  | M5    | Separador Documentos                                                              | Should    | 4 h        |       | por fazer |
 | 32  | M5    | Backlog: tarefas do tipo bug / sugestão                                           | Should    | 3 h        |       | por fazer |
 | 33  | M5    | Data limite e serviço `scheduler` com email de aviso                              | Should    | 6 h        |       | por fazer |
+| 34  | M5    | Estimativa em pomodoros e contador feitos / estimados                             | Should    | 2 h        |       | por fazer |
 
 ## Riscos
 

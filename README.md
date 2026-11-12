@@ -18,7 +18,7 @@ Não tenho um sítio único para os meus projetos e tarefas, para os bugs e suge
 ## Should
 
 - **Milestones:** marcos por projeto, com prazo, que agrupam tarefas (como no Odoo).
-- **Pomodoro:** foco, pausa e pausa longa configuráveis, com notificação com a app aberta.
+- **Pomodoro:** foco, pausa e pausa longa configuráveis, com notificação com a app aberta. Estimativa da tarefa em pomodoros, com contador feitos / estimados (ex: 3 / 4).
 - **Markdown estilo GitHub** nas descrições: cabeçalhos, listas, checkboxes (só visualização).
 - **Documentos:** separador com documentos gerais e guidelines, em markdown.
 - **Backlog:** tarefas do tipo bug / sugestão, criadas à mão, que depois passam para um projeto.
