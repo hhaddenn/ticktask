@@ -69,6 +69,15 @@ Quando eu pedir para avançar com uma tarefa do [plano](docs/plano.md), o Claude
 4. **Verificar:** testes ou experiências manuais e o linter e o formatter (`ruff` / `npm run lint` + `npm run format`).
 5. **Fechar:** pedir revisão ao Claude, lançar o tempo real no registo de horas e no plano, atualizar os docs se o desenho mudou e sugerir a mensagem de commit (o commit faço eu).
 
+### Ao avançar para cada passo
+
+Quando eu passar a um passo da checklist (ou pedir ajuda num), o Claude dá-me também uma **checklist curta só desse passo** (`- [ ]`), uma ação por linha e por ordem:
+
+- Cada linha diz o que fazer e onde (ficheiro, método, comando). Pode nomear a API do Django/React a usar (ex: `project.stages.first()`), mas não dá o método completo.
+- Termina com a verificação: `ruff` / `npm run lint`, a experiência no shell ou no browser e o que devo ver.
+- A última linha é colar o código ao Claude para revisão.
+- Explicações mais longas só se eu pedir ou se estiver preso.
+
 ## O que estou a aprender neste projeto
 
 - Timers e registo de tempo
