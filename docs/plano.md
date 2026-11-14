@@ -39,7 +39,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 7   | M1    | Ligar o React à API: proxy do Vite (ADR 0004) e um endpoint de teste              |           | 2 h        | 1h15min | feito     |
 | 8   | M2    | Modelos Projeto, Etapa e Tarefa, migrações e admin                                | Must      | 3 h        | 1h30min | feito     |
 | 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        | 2h15min | feito     |
-| 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        |         | por fazer |
+| 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        | 3h      | feito     |
 | 11  | M2    | React: lista de projetos e formulário                                             | Must      | 3 h        |         | por fazer |
 | 12  | M2    | React: vista kanban (colunas e cartões, sem drag and drop)                        | Must      | 4 h        |         | por fazer |
 | 13  | M2    | Protótipo isolado de drag and drop                                                | Must      | 3 h        |         | por fazer |

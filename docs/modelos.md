@@ -107,6 +107,14 @@ Com `AUTH_USER_MODEL = "accounts.User"` nas settings.
 
 **Ordem no drag and drop (`sequence`):** ao mover uma tarefa, renumeram-se as tarefas da coluna de destino (0, 1, 2…). Com poucas tarefas por coluna e um só utilizador, é a opção mais simples (KISS). Há alternativas (deixar espaços entre números, ou ordem fracionária), mas só fazem falta com muitas tarefas ou muitos utilizadores em simultâneo.
 
+**Na API (tarefa 10 do plano):**
+
+- **Criar sem `stage`:** a tarefa vai para a primeira etapa do projeto (a de `sequence` mais baixo), no fim da coluna. Um projeto sem etapas dá 400.
+- **O `project` não muda** depois de criada a tarefa: um `PATCH` com outro projeto dá 400. Mudar de projeto obrigaria a escolher uma etapa nova e, no M3, mexeria nas horas registadas.
+- **A `stage` só muda pela ação `move`:** `POST /api/tasks/<id>/move/` com `stage` e `position` (a contar do 0; uma posição maior do que a coluna põe a tarefa no fim). Um `PATCH` com outra etapa dá 400. Só a coluna de destino é renumerada: os buracos que ficam na de origem não estragam a ordem.
+- **Etapas só de leitura:** `GET /api/stages/?project=<id>` devolve as colunas pela ordem do `sequence`, para o kanban as desenhar mesmo quando estão vazias. Criar, editar e apagar etapas não está no MVP.
+- **Por decidir:** se se podem criar tarefas num projeto arquivado. Hoje pode.
+
 ---
 
 ## Tempo: `TimeEntry` e `TimerInterval`
@@ -185,17 +193,18 @@ Relação **um para um** com o `User` (`OneToOneField`, `CASCADE`), criada junto
 
 A base de dados é a última linha de defesa: o que ela consegue garantir, garante-o ela. O resto valida-se no modelo (`clean()`) ou no serializer.
 
-| Regra                                                                 | Onde               | Como                                                                                                                                           |
-| --------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Só uma sessão de timer aberta por utilizador (timer.md, regra 2)      | Base de dados      | `UniqueConstraint(fields=["owner"], condition=Q(source="timer", ended_at__isnull=True))`                                                       |
-| Só um intervalo a correr por sessão                                   | Base de dados      | `UniqueConstraint(fields=["entry"], condition=Q(ended_at__isnull=True))`. Junto com a regra anterior, dá "só um timer a correr por utilizador" |
-| Um intervalo ou uma sessão termina depois de começar                  | Base de dados      | `CheckConstraint`: `ended_at` é `NULL` ou `ended_at > started_at`                                                                              |
-| A data de início não passa da data limite                             | Base de dados      | `CheckConstraint`: uma das duas é `NULL`, ou `start_date <= due_date`                                                                          |
-| Um registo manual tem `minutes`                                       | Base de dados      | `CheckConstraint`: `source="timer"` ou `minutes` não é `NULL`                                                                                  |
-| Uma tarefa está numa etapa e num milestone **do seu próprio projeto** | Validação          | `clean()` / serializer. Uma constraint não consegue comparar campos de tabelas diferentes                                                      |
-| Um registo manual não tem intervalos                                  | Validação          | Serializer do `TimerInterval`                                                                                                                  |
-| `deadline_notified_at` é limpo quando `due_date` muda                 | Validação / lógica | No serializer (ou no `save()`) da tarefa                                                                                                       |
-| Só o dono vê e altera os seus dados                                   | API                | Filtrar sempre por `owner` nas views. Na v1 só há um utilizador, mas o hábito fica                                                             |
+| Regra                                                                 | Onde               | Como                                                                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Só uma sessão de timer aberta por utilizador (timer.md, regra 2)      | Base de dados      | `UniqueConstraint(fields=["owner"], condition=Q(source="timer", ended_at__isnull=True))`                                                                                                 |
+| Só um intervalo a correr por sessão                                   | Base de dados      | `UniqueConstraint(fields=["entry"], condition=Q(ended_at__isnull=True))`. Junto com a regra anterior, dá "só um timer a correr por utilizador"                                           |
+| Um intervalo ou uma sessão termina depois de começar                  | Base de dados      | `CheckConstraint`: `ended_at` é `NULL` ou `ended_at > started_at`                                                                                                                        |
+| A data de início não passa da data limite                             | Base de dados      | `CheckConstraint`: uma das duas é `NULL`, ou `start_date <= due_date`                                                                                                                    |
+| Um registo manual tem `minutes`                                       | Base de dados      | `CheckConstraint`: `source="timer"` ou `minutes` não é `NULL`                                                                                                                            |
+| Uma tarefa está numa etapa e num milestone **do seu próprio projeto** | Validação          | `clean()` / serializer (`validate`) / ação `move`. Uma constraint não consegue comparar campos de tabelas diferentes                                                                     |
+| O projeto de uma tarefa não muda; a etapa só muda pela ação `move`    | Validação          | `validate` do `TaskSerializer`, comparando com `self.instance`                                                                                                                           |
+| Um registo manual não tem intervalos                                  | Validação          | Serializer do `TimerInterval`                                                                                                                                                            |
+| `deadline_notified_at` é limpo quando `due_date` muda                 | Validação / lógica | No `update()` do `TaskSerializer`. Também quando a data é apagada (`due_date` passa a `NULL`)                                                                                            |
+| Só o dono vê e altera os seus dados                                   | API                | Filtrar sempre por `owner` nas views (nas tarefas e etapas, por `project__owner`). Um id de outro utilizador dá 404, como se não existisse. Na v1 só há um utilizador, mas o hábito fica |
 
 ---
 
