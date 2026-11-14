@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
@@ -98,3 +100,237 @@ class ProjectApiTests(APITestCase):
         response = self.client.delete(reverse("project-detail", args=[self.project_a.id]))
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         self.assertTrue(Project.objects.filter(id=self.project_a.id).exists())
+
+
+class TaskApiTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="userA", password="testA")
+        cls.other_user = get_user_model().objects.create_user(username="userB", password="testB")
+        cls.project_a = Project.objects.create(owner=cls.user, name="Project A")
+        cls.project_b = Project.objects.create(owner=cls.other_user, name="Project B")
+        cls.stage_a = Stage.objects.create(project=cls.project_a, name="To Do", sequence=0)
+        cls.stage_b = Stage.objects.create(project=cls.project_a, name="Doing", sequence=1)
+        cls.stage_c = Stage.objects.create(project=cls.project_b, name="To Do", sequence=0)
+        cls.task_a = Task.objects.create(
+            project=cls.project_a, stage=cls.stage_a, title="Task A", sequence=0
+        )
+        cls.task_b = Task.objects.create(
+            project=cls.project_a, stage=cls.stage_a, title="Task B", sequence=1
+        )
+        cls.task_c = Task.objects.create(project=cls.project_a, stage=cls.stage_b, title="Task C")
+        cls.task_d = Task.objects.create(project=cls.project_b, stage=cls.stage_c, title="Task D")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def test_list_only_shows_own_tasks(self):
+        response = self.client.get(reverse("task-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        id_list = [task["id"] for task in response.data]
+        self.assertIn(self.task_a.id, id_list)
+        self.assertNotIn(self.task_d.id, id_list)
+
+    def test_list_filters_by_project(self):
+        response = self.client.get(reverse("task-list"), {"project": self.project_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        id_list = [task["id"] for task in response.data]
+        self.assertEqual(set(id_list), {self.task_a.id, self.task_b.id, self.task_c.id})
+
+    def test_invalid_project_filter_is_ignored(self):
+        response = self.client.get(reverse("task-list"), {"project": "abc"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        id_list = [task["id"] for task in response.data]
+        self.assertIn(self.task_a.id, id_list)
+
+    def test_other_users_task_returns_404(self):
+        response = self.client.get(reverse("task-detail", args=[self.task_d.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_without_stage_uses_first_stage(self):
+        response = self.client.post(
+            reverse("task-list"), {"title": "Test", "project": self.project_a.id}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["stage"], self.stage_a.id)
+        self.assertEqual(response.data["sequence"], 2)
+
+    def test_create_in_empty_stage_starts_at_zero(self):
+        empty_stage = Stage.objects.create(name="Test", project=self.project_a, sequence=2)
+        response = self.client.post(
+            reverse("task-list"),
+            {"title": "Test", "project": self.project_a.id, "stage": empty_stage.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["sequence"], 0)
+
+    def test_create_with_stage_from_other_project_returns_400(self):
+        response = self.client.post(
+            reverse("task-list"),
+            {"title": "Test", "project": self.project_a.id, "stage": self.stage_c.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("stage", response.data)
+
+    def test_create_in_other_users_project_returns_400(self):
+        response = self.client.post(
+            reverse("task-list"),
+            {"title": "Test", "project": self.project_b.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("project", response.data)
+
+    def test_patch_updates_title(self):
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"title": "New Test"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.title, "New Test")
+
+    def test_patch_cannot_change_project(self):
+        project_c = Project.objects.create(owner=self.user, name="Project C")
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"project": project_c.id}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("project", response.data)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.project, self.project_a)
+
+    def test_patch_cannot_change_stage(self):
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"stage": self.stage_b.id}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("stage", response.data)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.stage, self.stage_a)
+
+    def test_changing_due_date_clears_notification(self):
+        self.task_a.deadline_notified_at = timezone.now()
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"due_date": "2026-12-01"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertIsNone(self.task_a.deadline_notified_at)
+
+    def test_patch_without_due_date_keeps_notification(self):
+        self.task_a.deadline_notified_at = timezone.now()
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"title": "New title"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertIsNotNone(self.task_a.deadline_notified_at)
+
+    def test_removing_due_date_clears_notification(self):
+        self.task_a.deadline_notified_at = timezone.now()
+        self.task_a.due_date = date(2026, 12, 1)
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"due_date": None}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertIsNone(self.task_a.deadline_notified_at)
+
+    def test_move_to_other_stage_at_top(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_a.id]),
+            {"stage": self.stage_b.id, "position": 0},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        stage_b_order = list(self.stage_b.tasks.values_list("id", flat=True))
+        stage_a_order = list(self.stage_a.tasks.values_list("id", flat=True))
+        self.assertEqual(stage_b_order, [self.task_a.id, self.task_c.id])
+        self.assertEqual(stage_a_order, [self.task_b.id])
+        self.assertEqual(response.data["stage"], self.stage_b.id)
+
+    def test_move_within_same_stage(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_a.id]),
+            {"stage": self.stage_a.id, "position": 1},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        stage_a_order = list(self.stage_a.tasks.values_list("id", flat=True))
+        self.assertEqual(stage_a_order, [self.task_b.id, self.task_a.id])
+        self.task_a.refresh_from_db()
+        self.task_b.refresh_from_db()
+        self.assertEqual(self.task_b.sequence, 0)
+        self.assertEqual(self.task_a.sequence, 1)
+
+    def test_move_beyond_end_goes_last(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_a.id]),
+            {"stage": self.stage_b.id, "position": 99},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        stage_b_order = list(self.stage_b.tasks.values_list("id", flat=True))
+        self.assertEqual(stage_b_order, [self.task_c.id, self.task_a.id])
+
+    def test_move_to_other_project_stage_returns_400(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_a.id]),
+            {"stage": self.stage_c.id, "position": 0},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("stage", response.data)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.stage, self.stage_a)
+
+    def test_move_with_negative_position_returns_400(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_a.id]),
+            {"stage": self.stage_b.id, "position": -1},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("position", response.data)
+
+    def test_move_other_users_task_returns_404(self):
+        response = self.client.post(
+            reverse("task-move", args=[self.task_d.id]),
+            {"stage": self.stage_c.id, "position": 0},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_tasks_403_when_not_logged(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(reverse("task-list"))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_task(self):
+        response = self.client.delete(reverse("task-detail", args=[self.task_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Task.objects.filter(id=self.task_a.id).exists())
+
+    def test_stages_list_only_shows_own_stages(self):
+        response = self.client.get(reverse("stage-list"))
+        id_list = [stage["id"] for stage in response.data]
+        self.assertIn(self.stage_a.id, id_list)
+        self.assertNotIn(self.stage_c.id, id_list)
+
+    def test_stages_filter_by_project_in_order(self):
+        response = self.client.get(reverse("stage-list"), {"project": self.project_a.id})
+        id_list = [stage["id"] for stage in response.data]
+        self.assertEqual(id_list, [self.stage_a.id, self.stage_b.id])
+
+    def test_stages_are_read_only(self):
+        response = self.client.post(
+            reverse("stage-list"),
+            {"name": "Test", "project": self.project_a.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
