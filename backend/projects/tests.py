@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -64,15 +65,18 @@ class ProjectApiTests(APITestCase):
         self.assertEqual(project.owner, self.user)
         self.assertEqual(project.stages.count(), 3)
         self.assertTrue(done_list[-1])
-        
+
     def test_patch_updates_name(self):
-        response = self.client.patch(reverse("project-detail", args=[self.project_a.id]), {"name": "Renamed"})
+        response = self.client.patch(
+            reverse("project-detail", args=[self.project_a.id]), {"name": "Renamed"}
+        )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.project_a.refresh_from_db()
         self.assertEqual(self.project_a.name, "Renamed")
 
     def test_archive_hides_project_from_list(self):
-        self.client.post(reverse("project-archive", args=[self.project_a.id]))
+        response = self.client.post(reverse("project-archive", args=[self.project_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.project_a.refresh_from_db()
         self.assertIsNotNone(self.project_a.archived_at)
         response = self.client.get(reverse("project-list"))
@@ -83,16 +87,14 @@ class ProjectApiTests(APITestCase):
         self.assertIn(self.project_a.id, ids)
 
     def test_unarchive_restores_project(self):
-        pass
-        #TODO
-        # Põe o projeto arquivado diretamente: self.project_a.archived_at = timezone.now() e self.project_a.save(). O timezone vem de django.utils.
-        # POST a reverse("project-unarchive", args=[...]).
-        # Verifica que o status é 200, e não 404.
-        # Faz refresh_from_db() e verifica com o assertIsNone que o archived_at voltou a None.
-    
+        self.project_a.archived_at = timezone.now()
+        self.project_a.save(update_fields=["archived_at", "updated_at"])
+        response = self.client.post(reverse("project-unarchive", args=[self.project_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.project_a.refresh_from_db()
+        self.assertIsNone(self.project_a.archived_at)
+
     def test_delete_not_allowed(self):
-        pass
-        #TODO
-        # self.client.delete(...) ao detalhe do projeto.
-        # Verifica que o status é HTTP_405_METHOD_NOT_ALLOWED.
-        # Verifica que o projeto continua a existir: Project.objects.filter(id=...).exists() dá True.
+        response = self.client.delete(reverse("project-detail", args=[self.project_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertTrue(Project.objects.filter(id=self.project_a.id).exists())
