@@ -26,4 +26,5 @@ Toda a API fica debaixo de `/api/`. Em dev, o servidor do Vite reencaminha `/api
   - Alterações ao `vite.config.js` obrigam a reiniciar o `npm run dev`.
   - O servidor web de produção tem de reencaminhar `/api/` para o Django (fica para o M4).
   - A proteção CSRF continua a ser necessária quando houver login; estar na mesma origem não a dispensa.
+  - O proxy (o do Vite em dev e o servidor web em produção) tem de manter o header `Host` original. O Django compara o `Origin` do pedido com o `Host` que recebe, e se não coincidirem rejeita os POST/PATCH com "CSRF Failed: Origin checking failed". No Vite isto obriga a usar a forma em objeto com `changeOrigin: false`, porque a forma curta (`"/api": "http://..."`) reescreve o `Host`.
 - **O que faria reverter esta decisão:** a API passar a ser usada por clientes noutras origens (ex: outra app ou um domínio separado para a API). Aí seria preciso CORS, restrito a essas origens.
