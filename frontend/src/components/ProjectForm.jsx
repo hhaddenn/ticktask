@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { apiFetch } from "../api";
+import Button from "./ui/Button";
+import { Input, Textarea } from "./ui/Input";
 
 export default function ProjectForm({ onSaved, project, onCancel }) {
 	const [name, setName] = useState(project?.name ?? "");
@@ -36,34 +38,67 @@ export default function ProjectForm({ onSaved, project, onCancel }) {
 	}
 
 	return (
-		<form onSubmit={handleSubmit}>
-			{errors.detail && <p>{errors.detail}</p>}
-			<label htmlFor="name">Name</label>
-			<input
-				type="text"
-				name="name"
-				id="name"
-				value={name}
-				onChange={(e) => setName(e.target.value)}
-				required
-			/>
-			{errors.name?.[0] && <p>{errors.name[0]}</p>}
-			<label htmlFor="description">Description</label>
-			<textarea
-				name="description"
-				id="description"
-				value={description}
-				onChange={(e) => setDescription(e.target.value)}
-			></textarea>
-			{errors.description?.[0] && <p>{errors.description[0]}</p>}
-			<button type="submit" disabled={submitting}>
-				{project ? "Save" : "Create"}
-			</button>
-			{project && (
-				<button type="button" onClick={onCancel}>
-					Cancel
-				</button>
+		<form
+			onSubmit={handleSubmit}
+			className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-xs ring-1 ring-slate-900/10 dark:bg-slate-900 dark:ring-white/10"
+		>
+			<h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+				{project ? "Edit Project" : "New Project"}
+			</h2>
+			{errors.detail && (
+				<p className="text-sm text-red-600 dark:text-red-400">
+					{errors.detail}
+				</p>
 			)}
+			<div className="flex flex-col gap-1.5">
+				<label
+					htmlFor="name"
+					className="text-sm font-medium text-slate-700 dark:text-slate-300"
+				>
+					Name
+				</label>
+				<Input
+					name="name"
+					id="name"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					required
+				/>
+				{errors.name?.[0] && (
+					<p className="text-sm text-red-600 dark:text-red-400">
+						{errors.name[0]}
+					</p>
+				)}
+			</div>
+			<div className="flex flex-col gap-1.5">
+				<label
+					htmlFor="description"
+					className="text-sm font-medium text-slate-700 dark:text-slate-300"
+				>
+					Description
+				</label>
+				<Textarea
+					name="description"
+					id="description"
+					value={description}
+					onChange={(e) => setDescription(e.target.value)}
+				/>
+				{errors.description?.[0] && (
+					<p className="text-sm text-red-600 dark:text-red-400">
+						{errors.description[0]}
+					</p>
+				)}
+			</div>
+			<div className="flex gap-2">
+				<Button type="submit" disabled={submitting}>
+					{project ? "Save" : "Create"}
+				</Button>
+				{project && (
+					<Button variant="secondary" onClick={onCancel}>
+						Cancel
+					</Button>
+				)}
+			</div>
 		</form>
 	);
 }

@@ -63,19 +63,13 @@ export default function ProjectsPage() {
 	}
 
 	return loading ? (
-		<p>Loading...</p>
+		<p className="slate-500 dark:slate-400 text-sm">Loading...</p>
 	) : error ? (
-		<p>{error.message}</p>
+		<p className="text-sm text-red-600 dark:text-red-400">
+			{error.message}
+		</p>
 	) : (
-		<>
-			<label htmlFor="showArchived">Show Archived</label>
-			<input
-				type="checkbox"
-				checked={showArchived}
-				onChange={(e) => setShowArchived(e.target.checked)}
-				name="showArchived"
-				id="showArchived"
-			/>
+		<div className="flex flex-col gap-6">
 			{editingProject ? (
 				<ProjectForm
 					key={editingProject.id}
@@ -86,11 +80,30 @@ export default function ProjectsPage() {
 			) : (
 				!showArchived && <ProjectForm onSaved={handleCreated} />
 			)}
+			<div className="flex items-center justify-between">
+				<h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">
+					Projects
+				</h2>
+				<label
+					htmlFor="showArchived"
+					className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+				>
+					<input
+						type="checkbox"
+						checked={showArchived}
+						onChange={(e) => setShowArchived(e.target.checked)}
+						name="showArchived"
+						id="showArchived"
+						className="size-4 accent-accent-700 dark:accent-accent-500"
+					/>
+					Show Archived
+				</label>
+			</div>
 			<ProjectList
 				projects={projects}
 				onEdit={setEditingProject}
 				onToggleArchive={handleToggleArchive}
 			/>
-		</>
+		</div>
 	);
 }

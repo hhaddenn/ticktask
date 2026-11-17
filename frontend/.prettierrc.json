@@ -6,5 +6,7 @@
 			"files": ["*.yml", "*.yaml", "*.md"],
 			"options": { "useTabs": false, "tabWidth": 4 }
 		}
-	]
+	],
+	"plugins": ["prettier-plugin-tailwindcss"],
+	"tailwindStylesheet": "./src/index.css"
 }
