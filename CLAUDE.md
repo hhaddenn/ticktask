@@ -23,7 +23,7 @@ Avisa-me se um pedido parecer fora do MVP.
 ## Stack
 
 - **Linguagem / framework:** React (frontend) e Django + Django REST Framework (API)
-- **Estilos:** inspirado no Odoo (kanban, cartões, drag and drop)
+- **Estilos:** Tailwind CSS, inspirado no Odoo (kanban, cartões, drag and drop). Componentes shadcn/ui só quando fizerem falta (ex: Dialog, Dropdown), depois de dominar o Tailwind
 - **Base de dados / backend:** PostgreSQL e Django
 - **Alojamento / deploy:** Raspberry Pi própria (ver [docs/adr/0002-deploy-raspberry.md](docs/adr/0002-deploy-raspberry.md))
 
@@ -84,5 +84,6 @@ Quando eu passar a um passo da checklist (ou pedir ajuda num), o Claude dá-me t
 - Notificações por email quando uma data limite se aproxima (tarefas agendadas)
 - React
 - Django
+- Styling com Tailwind CSS (e mais tarde shadcn/ui)
 
 Foca as explicações e as revisões nestes temas.
