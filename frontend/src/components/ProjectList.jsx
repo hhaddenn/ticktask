@@ -1,4 +1,5 @@
 import Button from "./ui/Button";
+import { Link } from "react-router";
 
 export default function ProjectList({ projects, onEdit, onToggleArchive }) {
 	return projects.length === 0 ? (
@@ -13,7 +14,12 @@ export default function ProjectList({ projects, onEdit, onToggleArchive }) {
 					className="flex flex-col gap-2 rounded-xl bg-white p-5 shadow-xs ring-1 ring-slate-900/10 transition hover:shadow-md dark:bg-slate-900 dark:ring-white/10"
 				>
 					<h2 className="font-semibold text-slate-900 dark:text-slate-50">
-						{project.name}
+						<Link
+							to={`/projects/${project.id}`}
+							className="text-inherit hover:underline"
+						>
+							{project.name}
+						</Link>
 					</h2>
 					{project.description && (
 						<p className="text-sm text-slate-500 dark:text-slate-400">

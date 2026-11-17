@@ -1,4 +1,6 @@
+import { Route, Routes } from "react-router";
 import ProjectsPage from "./pages/ProjectsPage";
+import ProjectKanbanPage from "./pages/ProjectKanbanPage";
 
 function App() {
 	return (
@@ -12,7 +14,13 @@ function App() {
 				</div>
 			</header>
 			<main className="mx-auto max-w-7xl px-4 py-6">
-				<ProjectsPage />
+				<Routes>
+					<Route path="/" element={<ProjectsPage />}></Route>
+					<Route
+						path="/projects/:projectId"
+						element={<ProjectKanbanPage />}
+					></Route>
+				</Routes>
 			</main>
 		</div>
 	);
