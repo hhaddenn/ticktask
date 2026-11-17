@@ -41,7 +41,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 9   | M2    | API de projetos (CRUD, arquivar)                                                  | Must      | 3 h        | 2h50min | feito     |
 | 10  | M2    | API de tarefas, incluindo mudar de etapa e de ordem                               | Must      | 4 h        | 3h35min | feito     |
 | 11  | M2    | React: lista de projetos e formulário                                             | Must      | 3 h        | 2h40min | feito     |
-| 11b | M2    | Setup do Tailwind e migração dos componentes atuais (shadcn só mais tarde)        | Must      | 2 h        |         | por fazer |
+| 11b | M2    | Setup do Tailwind e migração dos componentes atuais (shadcn só mais tarde)        | Must      | 2 h        | 1h40min | feito     |
 | 12  | M2    | React: vista kanban (colunas e cartões, sem drag and drop)                        | Must      | 4 h        |         | por fazer |
 | 13  | M2    | Protótipo isolado de drag and drop                                                | Must      | 3 h        |         | por fazer |
 | 14  | M2    | Drag and drop no kanban, com a ordem guardada na API                              | Must      | 4 h        |         | por fazer |
