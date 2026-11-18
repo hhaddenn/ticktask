@@ -2,6 +2,7 @@ import { useState } from "react";
 import { apiFetch } from "../api";
 import Button from "./ui/Button";
 import { Input, Textarea } from "./ui/Input";
+import Field from "./ui/Field";
 
 export default function ProjectForm({ onSaved, project, onCancel }) {
 	const [name, setName] = useState(project?.name ?? "");
@@ -50,13 +51,7 @@ export default function ProjectForm({ onSaved, project, onCancel }) {
 					{errors.detail}
 				</p>
 			)}
-			<div className="flex flex-col gap-1.5">
-				<label
-					htmlFor="name"
-					className="text-sm font-medium text-slate-700 dark:text-slate-300"
-				>
-					Name
-				</label>
+			<Field label="Name" htmlFor="name" error={errors.name?.[0]}>
 				<Input
 					name="name"
 					id="name"
@@ -64,31 +59,19 @@ export default function ProjectForm({ onSaved, project, onCancel }) {
 					onChange={(e) => setName(e.target.value)}
 					required
 				/>
-				{errors.name?.[0] && (
-					<p className="text-sm text-red-600 dark:text-red-400">
-						{errors.name[0]}
-					</p>
-				)}
-			</div>
-			<div className="flex flex-col gap-1.5">
-				<label
-					htmlFor="description"
-					className="text-sm font-medium text-slate-700 dark:text-slate-300"
-				>
-					Description
-				</label>
+			</Field>
+			<Field
+				label="Description"
+				htmlFor="description"
+				error={errors.description?.[0]}
+			>
 				<Textarea
 					name="description"
 					id="description"
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
 				/>
-				{errors.description?.[0] && (
-					<p className="text-sm text-red-600 dark:text-red-400">
-						{errors.description[0]}
-					</p>
-				)}
-			</div>
+			</Field>
 			<div className="flex gap-2">
 				<Button type="submit" disabled={submitting}>
 					{project ? "Save" : "Create"}

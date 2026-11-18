@@ -2,6 +2,8 @@ import { Link, useParams } from "react-router";
 import { useState, useEffect } from "react";
 import { apiFetch } from "../api";
 import KanbanColumn from "../components/KanbanColumn";
+import TaskForm from "../components/TaskForm";
+import Dialog from "../components/ui/Dialog";
 
 export default function ProjectKanbanPage() {
 	const { projectId } = useParams();
@@ -10,6 +12,7 @@ export default function ProjectKanbanPage() {
 	const [tasks, setTasks] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
+	const [editingTask, setEditingTask] = useState(null);
 
 	useEffect(() => {
 		let ignore = false;
@@ -46,6 +49,19 @@ export default function ProjectKanbanPage() {
 		};
 	}, [projectId]);
 
+	function handleTaskCreated(task) {
+		setTasks([...tasks, task]);
+	}
+
+	function handleTaskSaved(updated) {
+		setTasks(tasks.map((t) => (t.id === updated.id ? updated : t)));
+		setEditingTask(null);
+	}
+
+	function closeDialog() {
+		setEditingTask(null);
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			<Link
@@ -74,6 +90,16 @@ export default function ProjectKanbanPage() {
 							</span>
 						)}
 					</div>
+					<Dialog open={editingTask !== null} onClose={closeDialog}>
+						{editingTask && (
+							<TaskForm
+								key={editingTask.id}
+								task={editingTask}
+								onCancel={closeDialog}
+								onSaved={handleTaskSaved}
+							/>
+						)}
+					</Dialog>
 
 					<ul className="flex items-start gap-4 overflow-x-auto pb-2">
 						{stages.map((stage) => (
@@ -83,6 +109,8 @@ export default function ProjectKanbanPage() {
 								tasks={tasks.filter(
 									(task) => task.stage === stage.id,
 								)}
+								onEditTask={setEditingTask}
+								onTaskCreated={handleTaskCreated}
 							/>
 						))}
 					</ul>
