@@ -22,7 +22,7 @@ export default function ProjectList({ projects, onEdit, onToggleArchive }) {
 						</Link>
 					</h2>
 					{project.description && (
-						<p className="text-sm text-slate-500 dark:text-slate-400">
+						<p className="text-sm whitespace-pre-line text-slate-500 dark:text-slate-400">
 							{project.description}
 						</p>
 					)}
