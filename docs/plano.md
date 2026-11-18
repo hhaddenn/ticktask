@@ -44,7 +44,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 11b | M2    | Setup do Tailwind e migração dos componentes atuais (shadcn só mais tarde)         | Must      | 2 h        | 1h40min | feito                 |
 | 12  | M2    | React: vista kanban (colunas e cartões, sem drag and drop)                         | Must      | 4 h        | 2h      | feito                 |
 | 12b | M2    | React: criar e editar tarefa (reaproveitar `Input`, `Textarea` e `Button`)         | Must      | 3 h        | 2h      | feito                 |
-| 13  | M2    | Protótipo isolado de drag and drop                                                 | Must      | 3 h        |         | por fazer             |
+| 13  | M2    | Protótipo isolado de drag and drop                                                 | Must      | 3 h        | 1h40min | feito                 |
 | 14  | M2    | Drag and drop no kanban, com a ordem guardada na API                               | Must      | 4 h        |         | por fazer             |
 | 15  | M2    | Descrição em texto simples no projeto e na tarefa                                  | Must      | 1 h        | 0h      | feito na fase 11 e 12 |
 | 16  | M2    | React: página de login e logout (sessão e CSRF)                                    | Must      | 2 h        |         | por fazer             |
