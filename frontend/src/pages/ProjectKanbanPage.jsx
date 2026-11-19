@@ -4,6 +4,8 @@ import { apiFetch } from "../api";
 import KanbanColumn from "../components/KanbanColumn";
 import TaskForm from "../components/TaskForm";
 import Dialog from "../components/ui/Dialog";
+import { DragDropContext } from "@hello-pangea/dnd";
+import moveTask from "../kanban";
 
 export default function ProjectKanbanPage() {
 	const { projectId } = useParams();
@@ -13,6 +15,7 @@ export default function ProjectKanbanPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [editingTask, setEditingTask] = useState(null);
+	const [moveError, setMoveError] = useState(null);
 
 	useEffect(() => {
 		let ignore = false;
@@ -62,6 +65,37 @@ export default function ProjectKanbanPage() {
 		setEditingTask(null);
 	}
 
+	async function handleDragEnd(result) {
+		if (!result.destination) {
+			return;
+		}
+		if (
+			result.source.droppableId === result.destination.droppableId &&
+			result.source.index === result.destination.index
+		) {
+			return;
+		}
+		const previousTasks = tasks;
+		const taskId = Number(result.draggableId);
+		const destStage = Number(result.destination.droppableId);
+		const position = result.destination.index;
+		setMoveError(null);
+		setTasks(moveTask(previousTasks, taskId, destStage, position));
+		try {
+			await apiFetch(`/api/tasks/${taskId}/move/`, {
+				method: "POST",
+				body: {
+					stage: destStage,
+					position,
+				},
+			});
+		} catch (err) {
+			setTasks(previousTasks);
+			console.error(err);
+			setMoveError("Could not move the task. Try again.");
+		}
+	}
+
 	return (
 		<div className="flex flex-col gap-4">
 			<Link
@@ -100,20 +134,31 @@ export default function ProjectKanbanPage() {
 							/>
 						)}
 					</Dialog>
-
-					<ul className="flex items-start gap-4 overflow-x-auto pb-2">
-						{stages.map((stage) => (
-							<KanbanColumn
-								key={stage.id}
-								stage={stage}
-								tasks={tasks.filter(
-									(task) => task.stage === stage.id,
-								)}
-								onEditTask={setEditingTask}
-								onTaskCreated={handleTaskCreated}
-							/>
-						))}
-					</ul>
+					{moveError && (
+						<p className="text-sm text-red-600 dark:text-red-400">
+							{moveError}
+						</p>
+					)}
+					<DragDropContext onDragEnd={handleDragEnd}>
+						<ul className="flex items-start gap-4 overflow-x-auto pb-2">
+							{stages.map((stage) => (
+								<KanbanColumn
+									key={stage.id}
+									stage={stage}
+									tasks={tasks
+										.filter(
+											(task) => task.stage === stage.id,
+										)
+										.toSorted(
+											(a, b) => a.sequence - b.sequence,
+										)}
+									onEditTask={setEditingTask}
+									onTaskCreated={handleTaskCreated}
+									readOnly={Boolean(project.archived_at)}
+								/>
+							))}
+						</ul>
+					</DragDropContext>
 				</>
 			)}
 		</div>

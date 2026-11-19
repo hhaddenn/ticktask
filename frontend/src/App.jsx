@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router";
 import ProjectsPage from "./pages/ProjectsPage";
 import ProjectKanbanPage from "./pages/ProjectKanbanPage";
-import DndLabPage from "./lab/DndLabPage";
 
 function App() {
 	return (
@@ -21,7 +20,6 @@ function App() {
 						path="/projects/:projectId"
 						element={<ProjectKanbanPage />}
 					></Route>
-					<Route path="/lab/dnd" element={<DndLabPage />}></Route>
 				</Routes>
 			</main>
 		</div>
