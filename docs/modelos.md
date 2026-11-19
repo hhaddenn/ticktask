@@ -113,7 +113,7 @@ Com `AUTH_USER_MODEL = "accounts.User"` nas settings.
 - **O `project` não muda** depois de criada a tarefa: um `PATCH` com outro projeto dá 400. Mudar de projeto obrigaria a escolher uma etapa nova e, no M3, mexeria nas horas registadas.
 - **A `stage` só muda pela ação `move`:** `POST /api/tasks/<id>/move/` com `stage` e `position` (a contar do 0; uma posição maior do que a coluna põe a tarefa no fim). Um `PATCH` com outra etapa dá 400. Só a coluna de destino é renumerada: os buracos que ficam na de origem não estragam a ordem.
 - **Etapas só de leitura:** `GET /api/stages/?project=<id>` devolve as colunas pela ordem do `sequence`, para o kanban as desenhar mesmo quando estão vazias. Criar, editar e apagar etapas não está no MVP.
-- **Por decidir:** se se podem criar tarefas num projeto arquivado. Hoje pode.
+- **Projeto arquivado:** no kanban, as tarefas não se arrastam (`isDragDisabled`, tarefa 14). É só na interface: a API continua a aceitar o `move`, porque com um só utilizador basta. Criar tarefas continua a ser possível, tanto na API como no quick add.
 
 ---
 
