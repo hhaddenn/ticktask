@@ -2,6 +2,7 @@ from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -29,6 +30,19 @@ class TaskCleanTests(TestCase):
         with self.assertRaises(ValidationError) as ctx:
             task.full_clean()
         self.assertIn("stage", ctx.exception.message_dict)
+
+    def test_start_date_after_due_date_violates_constraint(self):
+        with self.assertRaises(IntegrityError):
+            # The IntegrityError aborts the current transaction; atomic() isolates it
+            # so the rest of the test (and the next tests) can still use the database.
+            with transaction.atomic():
+                Task.objects.create(
+                    project=self.project_a,
+                    stage=self.stage_a,
+                    title="Task A",
+                    start_date=date(2026, 12, 10),
+                    due_date=date(2026, 12, 1),
+                )
 
 
 class ProjectApiTests(APITestCase):
@@ -240,6 +254,52 @@ class TaskApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.task_a.refresh_from_db()
         self.assertIsNone(self.task_a.deadline_notified_at)
+
+    def test_patch_due_date_before_saved_start_date_returns_400(self):
+        self.task_a.start_date = date(2026, 12, 10)
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"due_date": "2026-12-01"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("due_date", response.data)
+
+    def test_patch_valid_dates_returns_200(self):
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]),
+            {"start_date": "2026-12-01", "due_date": "2026-12-10"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.start_date, date(2026, 12, 1))
+        self.assertEqual(self.task_a.due_date, date(2026, 12, 10))
+
+    def test_patch_clearing_due_date_with_saved_start_date_returns_200(self):
+        self.task_a.start_date = date(2026, 12, 1)
+        self.task_a.due_date = date(2026, 12, 10)
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"due_date": None}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.start_date, date(2026, 12, 1))
+        self.assertIsNone(self.task_a.due_date)
+
+    def test_patch_new_start_date_and_cleared_due_date_returns_200(self):
+        self.task_a.start_date = date(2026, 12, 1)
+        self.task_a.due_date = date(2026, 12, 10)
+        self.task_a.save()
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]),
+            {"start_date": "2026-12-25", "due_date": None},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.task_a.refresh_from_db()
+        self.assertEqual(self.task_a.start_date, date(2026, 12, 25))
+        self.assertIsNone(self.task_a.due_date)
 
     def test_move_to_other_stage_at_top(self):
         response = self.client.post(

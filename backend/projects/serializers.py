@@ -40,6 +40,11 @@ class TaskSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         project = attrs.get("project")
         stage = attrs.get("stage")
+        # Values the task will have after saving: on a partial PATCH, fields not sent
+        # come from the saved task. Don't use `or` here: it would replace a null sent
+        # on purpose (clearing the date) with the old value.
+        start_date = attrs.get("start_date", self.instance.start_date if self.instance else None)
+        due_date = attrs.get("due_date", self.instance.due_date if self.instance else None)
         if project and self.instance and project != self.instance.project:
             raise serializers.ValidationError({"project": "A task's project cannot be changed."})
         if stage and self.instance and stage != self.instance.stage:
@@ -51,6 +56,12 @@ class TaskSerializer(serializers.ModelSerializer):
             if stage.project_id != project.id:
                 raise serializers.ValidationError(
                     {"stage": "Stage does not belong to the project."}
+                )
+
+        if start_date and due_date:
+            if start_date > due_date:
+                raise serializers.ValidationError(
+                    {"due_date": "Due date cannot be before start date."}
                 )
         return attrs
 

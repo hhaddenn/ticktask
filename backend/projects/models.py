@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import F, Q
 
 
 class Project(models.Model):
@@ -54,3 +55,14 @@ class Task(models.Model):
 
     class Meta:
         ordering = ["stage__sequence", "sequence", "id"]
+        constraints = [
+            # Last line of defense: nothing (API bug, admin, script) can save a task
+            # that starts after its due date. TaskSerializer.validate checks first,
+            # so the API answers 400 instead of crashing with an IntegrityError (500).
+            models.CheckConstraint(
+                condition=Q(start_date__isnull=True)
+                | Q(due_date__isnull=True)
+                | Q(start_date__lte=F("due_date")),
+                name="start_date_lte_due_date",
+            )
+        ]
