@@ -47,6 +47,11 @@ class AuthApiTests(APITestCase):
         response = self.client.post(reverse("logout"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    # The CSRF tests below use their own client: self.client skips CSRF checks,
+    # so it would let these requests through.
+
+    # Regression guard: if this fails, @csrf_protect was probably moved above
+    # @api_view in login_view, which silently disables it.
     def test_login_without_token(self):
         client = APIClient(enforce_csrf_checks=True)
         response = client.post(
@@ -56,6 +61,8 @@ class AuthApiTests(APITestCase):
 
     def test_login_with_token(self):
         client = APIClient(enforce_csrf_checks=True)
+        # Same flow as the React app: /me/ sets the csrftoken cookie (even on 403),
+        # then the token is copied into the X-CSRFToken header.
         client.get(reverse("me"))
         token = client.cookies["csrftoken"].value
         response = client.post(
@@ -67,6 +74,9 @@ class AuthApiTests(APITestCase):
 
     def test_logout_with_session_without_token(self):
         client = APIClient(enforce_csrf_checks=True)
+        # client.login() creates the session without going through login_view.
         client.login(username=self.username, password=self.password)
+        # Rejected by DRF's SessionAuthentication, which checks CSRF for
+        # authenticated users (logout_view has no @csrf_protect).
         response = client.post(reverse("logout"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
