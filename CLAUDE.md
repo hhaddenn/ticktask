@@ -64,11 +64,11 @@ Notas:
 
 Quando eu pedir para avançar com uma tarefa do [plano](docs/plano.md), o Claude dá-me uma checklist em markdown (`- [ ]`) para eu seguir enquanto programo, com esta estrutura:
 
-1. **Antes de começar:** registar a minha estimativa no [registo de horas](docs/registo-horas.md), dizer que docs ler (modelos, timer, ADRs) e avisar se algo sai do marco ou do MVP.
+1. **Antes de começar:** registar a minha estimativa na coluna Estimativa do [plano](docs/plano.md) (os tempos ficam só no plano, não no registo de horas), dizer que docs ler (modelos, timer, ADRs) e avisar se algo sai do marco ou do MVP.
 2. **Passos:** pequenos (15 a 30 min cada) e por ordem. Cada passo diz o que fazer, o comando a correr e como verificar que funcionou. Os conceitos novos são explicados numa linha e o Claude não dá o código feito.
 3. **Decisões:** as escolhas que tenho de tomar nesta tarefa, com a recomendação do Claude.
 4. **Verificar:** testes ou experiências manuais e o linter e o formatter (`ruff` / `npm run lint` + `npm run format`).
-5. **Fechar:** pedir revisão ao Claude, lançar o tempo real no registo de horas e no plano, atualizar os docs se o desenho mudou e sugerir a mensagem de commit (o commit faço eu).
+5. **Fechar:** pedir revisão ao Claude, lançar o tempo real na coluna Real do plano, atualizar os docs se o desenho mudou e sugerir a mensagem de commit (o commit faço eu).
 
 ### Ao avançar para cada passo
 
