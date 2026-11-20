@@ -49,7 +49,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 15  | M2    | Descrição em texto simples no projeto e na tarefa                                                                         | Must      | 1 h        | 0h      | feito na fase 11 e 12 |
 | 16  | M2    | API de autenticação: `me`, login e logout (sessão e CSRF), com testes                                                     | Must      | 2h         | 1h40min | feito                 |
 | 16b | M2    | React: página de login e logout                                                                                           | Must      | 2 h        | 1h5min  | feito                 |
-| 17  | M3    | Modelos de registo de tempo e sessão, com a regra "um timer ativo"                                                        | Must      | 3 h        |         | por fazer             |
+| 17  | M3    | Modelos de registo de tempo e sessão, com a regra "um timer ativo"                                                        | Must      | 3 h        | 1h45min | feito                 |
 | 18  | M3    | API do timer: start, pause, resume, stop                                                                                  | Must      | 4 h        |         | por fazer             |
 | 19  | M3    | Arredondamento no stop, com testes                                                                                        | Must      | 2 h        |         | por fazer             |
 | 20  | M3    | React: timer na tarefa (contagem a partir do servidor)                                                                    | Must      | 4 h        |         | por fazer             |

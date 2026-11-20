@@ -51,6 +51,7 @@ Notas:
   - `config/`: settings, URLs, WSGI/ASGI (só configuração)
   - `accounts/`: `User` próprio e preferências, e a autenticação por sessão em `/api/auth/` (`me/`, `login/`, `logout/`)
   - `projects/`: `Project`, `Stage` e `Task`, com a API em `/api/` (`projects/`, `stages/`, `tasks/`), incluindo arquivar projetos e mover tarefas no kanban
+  - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). Ainda sem API (tarefa 18)
 - `docker-compose.dev.yml`: Postgres para desenvolvimento
 - `frontend/`: aplicação React (Vite, JavaScript, ESLint, Prettier com tabs)
 - `docs/`: plano, ADRs, registo de horas
