@@ -1,10 +1,13 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
-from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
 
 from projects.models import Project, Stage, Task
 
@@ -13,7 +16,7 @@ from .models import TimeEntry, TimerInterval
 
 # Shared setup only, no tests: if it had test_ methods, every subclass would run
 # them again.
-class TimesheetTestBase(TestCase):
+class TimesheetTestBase(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user(username="testuser", password="test")
@@ -131,3 +134,122 @@ class TimerIntervalConstraintTests(TimesheetTestBase):
         )
         entry.delete()
         self.assertEqual(TimerInterval.objects.count(), 0)
+
+
+class TimerApiTests(TimesheetTestBase):
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def test_get_without_open_session_returns_none(self):
+        response = self.client.get(reverse("timer-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data)
+
+    def test_start_opens_running_session(self):
+        response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["state"], "running")
+        self.assertEqual(response.data["task"], self.task_a.id)
+        self.assertEqual(len(response.data["intervals"]), 1)
+        self.assertIsNone(response.data["intervals"][0]["ended_at"])
+
+    def test_pause_closes_running_interval(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["state"], "paused")
+        self.assertEqual(len(response.data["intervals"]), 1)
+        self.assertIsNotNone(response.data["intervals"][0]["ended_at"])
+
+    def test_resume_opens_new_interval(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-resume"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["state"], "running")
+        self.assertEqual(len(response.data["intervals"]), 2)
+        self.assertIsNone(response.data["intervals"][-1]["ended_at"])
+
+    def test_stop_closes_session(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-stop"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["state"], "stopped")
+        self.assertIsNotNone(response.data["minutes"])
+        response = self.client.get(reverse("timer-list"))
+        self.assertIsNone(response.data)
+
+    def test_stop_while_paused_closes_session(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-stop"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["state"], "stopped")
+        self.assertEqual(len(response.data["intervals"]), 1)
+
+    def test_start_with_open_session_is_rejected(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(TimeEntry.objects.count(), 1)
+
+    def test_pause_while_paused_is_rejected(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+    def test_resume_while_running_is_rejected(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-resume"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(TimerInterval.objects.count(), 1)
+
+    def test_start_with_other_users_task_is_rejected(self):
+        new_project = Project.objects.create(owner=self.other_user, name="Project A")
+        new_stage = Stage.objects.create(project=new_project, name="Stage A")
+        new_task = Task.objects.create(project=new_project, stage=new_stage, title="Task A")
+        response = self.client.post(reverse("timer-start"), {"task": new_task.id})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("task", response.data)
+        self.assertEqual(TimeEntry.objects.count(), 0)
+
+    def test_start_on_archived_project_is_rejected(self):
+        self.project_a.archived_at = timezone.now()
+        self.project_a.save()
+        response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("task", response.data)
+        self.assertEqual(TimeEntry.objects.count(), 0)
+
+    def test_anonymous_user_is_rejected(self):
+        self.client.force_authenticate(user=None)
+        response = self.client.get(reverse("timer-list"))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_stop_saves_worked_minutes(self):
+        t = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=t):
+            self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=30)):
+            self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
+        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=60)):
+            self.client.post(reverse("timer-resume"), {"task": self.task_a.id})
+        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=100)):
+            response = self.client.post(reverse("timer-stop"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["minutes"], 70)
+
+    def test_start_after_midnight_uses_lisbon_date(self):
+        t = datetime(2026, 7, 15, 23, 30, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=t):
+            response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["date"], "2026-07-16")
+
+    def test_concurrent_start_is_rejected(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        with patch("timesheets.services.get_open_entry", return_value=None):
+            response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(TimeEntry.objects.count(), 1)
