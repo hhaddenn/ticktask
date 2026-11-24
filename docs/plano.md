@@ -52,7 +52,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 17  | M3    | Modelos de registo de tempo e sessão, com a regra "um timer ativo"                                                        | Must      | 3 h        | 1h45min | feito                 |
 | 18  | M3    | API do timer: start, pause, resume, stop                                                                                  | Must      | 4 h        | 3h45min | feito                 |
 | 19  | M3    | Arredondamento no stop, com testes                                                                                        | Must      | 2 h        | 1h05min | feito                 |
-| 20  | M3    | React: timer na tarefa (contagem a partir do servidor)                                                                    | Must      | 4 h        |         | por fazer             |
+| 20  | M3    | React: timer na tarefa (contagem a partir do servidor)                                                                    | Must      | 4 h        | 2h      | feito                 |
 | 21  | M3    | Aviso de timer ativo noutra tarefa                                                                                        | Must      | 2 h        |         | por fazer             |
 | 22  | M3    | Aviso de sessão esquecida                                                                                                 | Must      | 2 h        |         | por fazer             |
 | 23  | M3    | Registos de tempo manuais                                                                                                 | Must      | 2 h        |         | por fazer             |

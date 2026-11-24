@@ -51,9 +51,12 @@ Notas:
   - `config/`: settings, URLs, WSGI/ASGI (só configuração)
   - `accounts/`: `User` próprio e preferências, e a autenticação por sessão em `/api/auth/` (`me/`, `login/`, `logout/`)
   - `projects/`: `Project`, `Stage` e `Task`, com a API em `/api/` (`projects/`, `stages/`, `tasks/`), incluindo arquivar projetos e mover tarefas no kanban
-  - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). API do timer em `/api/timer/` (`start/`, `pause/`, `resume/`, `stop/`), com a lógica em `services.py`
+  - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). API do timer em `/api/timer/` (`GET` devolve a sessão aberta, ou 204 se não houver; `start/`, `pause/`, `resume/`, `stop/`), com a lógica em `services.py`, incluindo o arredondamento do total no stop
 - `docker-compose.dev.yml`: Postgres para desenvolvimento
 - `frontend/`: aplicação React (Vite, JavaScript, ESLint, Prettier com tabs)
+  - `src/hooks/useTimer.js`: estado do timer (sessão aberta e âncora `syncedAt`) e as ações start, pause, resume e stop. Chamado uma só vez, na página do kanban, e passado por props
+  - `src/components/TimerDisplay.jsx`: contador ao vivo, derivado do `elapsed_seconds` do servidor mais o tempo local desde a resposta
+  - `src/timer.js`: `formatDuration` (segundos → `H:MM:SS`)
 - `docs/`: plano, ADRs, registo de horas
 
 ## Regras específicas deste projeto
