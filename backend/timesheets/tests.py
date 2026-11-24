@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
+from django.test import SimpleTestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -12,6 +13,7 @@ from rest_framework.test import APITestCase
 from projects.models import Project, Stage, Task
 
 from .models import TimeEntry, TimerInterval
+from .services import round_up_minutes
 
 
 # Shared setup only, no tests: if it had test_ methods, every subclass would run
@@ -140,6 +142,10 @@ class TimerApiTests(TimesheetTestBase):
     def setUp(self):
         self.client.force_authenticate(user=self.user)
 
+    def _post_at(self, url_name, when):
+        with patch("django.utils.timezone.now", return_value=when):
+            return self.client.post(reverse(url_name), {"task": self.task_a.id})
+
     def test_get_without_open_session_returns_none(self):
         response = self.client.get(reverse("timer-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -227,18 +233,41 @@ class TimerApiTests(TimesheetTestBase):
         response = self.client.get(reverse("timer-list"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_stop_saves_worked_minutes(self):
+    def test_stop_saves_rounded_minutes(self):
         t = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
-        with patch("django.utils.timezone.now", return_value=t):
-            self.client.post(reverse("timer-start"), {"task": self.task_a.id})
-        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=30)):
-            self.client.post(reverse("timer-pause"), {"task": self.task_a.id})
-        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=60)):
-            self.client.post(reverse("timer-resume"), {"task": self.task_a.id})
-        with patch("django.utils.timezone.now", return_value=t + timedelta(minutes=100)):
-            response = self.client.post(reverse("timer-stop"), {"task": self.task_a.id})
+        self._post_at(url_name="timer-start", when=t)
+        self._post_at(url_name="timer-pause", when=t + timedelta(minutes=30))
+        self._post_at(url_name="timer-resume", when=t + timedelta(minutes=60))
+        response = self._post_at(url_name="timer-stop", when=t + timedelta(minutes=100))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["minutes"], 70)
+        self.assertEqual(response.data["minutes"], 75)
+
+    def test_stop_rounds_up_partial_minutes(self):
+        t = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
+        self._post_at(url_name="timer-start", when=t)
+        response = self._post_at(url_name="timer-stop", when=t + timedelta(minutes=15, seconds=30))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["minutes"], 30)
+
+    # 5 + 5 min worked gives 15. Rounding each interval on its own would give
+    # 15 + 15 = 30 (timer.md rule 7: only the session total is rounded).
+    def test_stop_rounds_session_total_not_each_interval(self):
+        t = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
+        self._post_at(url_name="timer-start", when=t)
+        self._post_at(url_name="timer-pause", when=t + timedelta(minutes=5))
+        self._post_at(url_name="timer-resume", when=t + timedelta(minutes=20))
+        response = self._post_at(url_name="timer-stop", when=t + timedelta(minutes=25))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["minutes"], 15)
+
+    def test_stop_keeps_exact_times_in_intervals(self):
+        t = datetime(2026, 11, 23, 9, 0, tzinfo=UTC)
+        self._post_at(url_name="timer-start", when=t)
+        self._post_at(url_name="timer-stop", when=t + timedelta(minutes=15, seconds=30))
+        entry = TimeEntry.objects.get(owner=self.user)
+        total = sum((i.ended_at - i.started_at for i in entry.intervals.all()), timedelta())
+        self.assertEqual(total, timedelta(minutes=15, seconds=30))
+        self.assertEqual(entry.minutes, 30)
 
     def test_start_after_midnight_uses_lisbon_date(self):
         t = datetime(2026, 7, 15, 23, 30, tzinfo=UTC)
@@ -253,3 +282,42 @@ class TimerApiTests(TimesheetTestBase):
             response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(TimeEntry.objects.count(), 1)
+
+
+class RoundUpMinutesTests(SimpleTestCase):
+    def test_rounds_up_to_next_block(self):
+        cases = [
+            (timedelta(seconds=1), 15),
+            (timedelta(minutes=10), 15),
+            (timedelta(minutes=15, seconds=1), 30),
+        ]
+        for duration, expected in cases:
+            with self.subTest(duration=duration):
+                self.assertEqual(round_up_minutes(duration, 15), expected)
+
+    def test_exact_multiple_is_not_rounded(self):
+        cases = [(timedelta(minutes=15), 15), (timedelta(hours=1), 60)]
+        for duration, expected in cases:
+            with self.subTest(duration=duration):
+                self.assertEqual(round_up_minutes(duration, 15), expected)
+
+    def test_example_from_timer_doc(self):
+        duration = timedelta(hours=7, minutes=7)
+        expected = 435
+        self.assertEqual(round_up_minutes(duration, 15), expected)
+
+    def test_block_of_one_rounds_seconds_up(self):
+        cases = [(timedelta(seconds=30), 1), (timedelta(minutes=10, seconds=1), 11)]
+        for duration, expected in cases:
+            with self.subTest(duration=duration):
+                self.assertEqual(round_up_minutes(duration, 1), expected)
+
+    def test_microseconds_are_ignored(self):
+        duration = timedelta(minutes=15, milliseconds=300)
+        expected = 15
+        self.assertEqual(round_up_minutes(duration, 15), expected)
+
+    def test_zero_duration_is_zero(self):
+        duration = timedelta(seconds=0)
+        expected = 0
+        self.assertEqual(round_up_minutes(duration, 15), expected)
