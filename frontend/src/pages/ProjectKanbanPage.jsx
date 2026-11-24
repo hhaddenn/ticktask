@@ -7,6 +7,7 @@ import Dialog from "../components/ui/Dialog";
 import { DragDropContext } from "@hello-pangea/dnd";
 import moveTask from "../kanban";
 import useTimer from "../hooks/useTimer";
+import TimerConflictDialog from "../components/TimerConflictDialog";
 
 export default function ProjectKanbanPage() {
 	const { projectId } = useParams();
@@ -98,6 +99,8 @@ export default function ProjectKanbanPage() {
 		}
 	}
 
+	const pendingTask = tasks.find((t) => t.id === timer.pendingTaskId);
+
 	return (
 		<div className="flex flex-col gap-4">
 			<Link
@@ -146,6 +149,22 @@ export default function ProjectKanbanPage() {
 							{timer.error}
 						</p>
 					)}
+
+					<Dialog
+						open={pendingTask !== undefined}
+						onClose={timer.cancelStart}
+					>
+						{pendingTask && (
+							<TimerConflictDialog
+								activeTaskTitle={timer.entry.task_title}
+								activeProjectName={timer.entry.project_name}
+								pendingTaskTitle={pendingTask.title}
+								onContinue={timer.cancelStart}
+								onSwitch={timer.confirmStart}
+							/>
+						)}
+					</Dialog>
+
 					<DragDropContext onDragEnd={handleDragEnd}>
 						<ul className="flex items-start gap-4 overflow-x-auto pb-2">
 							{stages.map((stage) => (

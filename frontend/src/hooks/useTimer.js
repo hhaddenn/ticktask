@@ -9,6 +9,7 @@ export default function useTimer() {
 	// performance.now() and not Date.now(): it never jumps if the PC clock is set.
 	const [syncedAt, setSyncedAt] = useState(null);
 	const [error, setError] = useState(null);
+	const [pendingTaskId, setPendingTaskId] = useState(null);
 
 	function applyResponse(data) {
 		// Stop returns the closed session; for the UI that means "no timer".
@@ -19,6 +20,9 @@ export default function useTimer() {
 		}
 		setSyncedAt(performance.now());
 		setError(null);
+		// The warning was asked about the previous server state: any new state makes
+		// it stale. If the conflict still exists, the next start shows it again.
+		setPendingTaskId(null);
 	}
 
 	useEffect(() => {
@@ -52,15 +56,58 @@ export default function useTimer() {
 				body,
 			});
 			applyResponse(data);
+			return true;
 		} catch (err) {
 			setError(
 				err.data?.detail ?? "Could not update the timer. Try again.",
 			);
+			return false;
 		}
 	}
 
 	async function start(taskId) {
-		await post("start", { task: taskId });
+		// The server would reject this with 409 anyway, but checking here first lets
+		// the user choose what to do (timer.md rule 2) instead of only seeing an error.
+		// The 409 is still the real guard, for when this state is out of date.
+		if (entry && entry.task !== taskId) {
+			setPendingTaskId(taskId);
+			return;
+		}
+		try {
+			const data = await apiFetch("/api/timer/start/", {
+				method: "POST",
+				body: { task: taskId },
+			});
+			applyResponse(data);
+		} catch (err) {
+			if (err.status === 409) {
+				// A 409 means this tab's state is out of date (e.g. another tab started a
+				// timer): reload the open session from the server and decide from that,
+				// not from `entry`, which is still the old state in this render.
+				try {
+					const result = await apiFetch("/api/timer/");
+					applyResponse(result);
+					// After applyResponse, because it clears pendingTaskId.
+					if (result === null) {
+						setError(
+							"The timer changed in another tab. Try again.",
+						);
+					} else if (result.task !== taskId) {
+						setPendingTaskId(taskId);
+					}
+				} catch (getErr) {
+					setError(
+						getErr.data?.detail ??
+							"Could not update the timer. Try again.",
+					);
+				}
+			} else {
+				setError(
+					err.data?.detail ??
+						"Could not update the timer. Try again.",
+				);
+			}
+		}
 	}
 
 	async function pause() {
@@ -74,5 +121,32 @@ export default function useTimer() {
 		await post("stop");
 	}
 
-	return { entry, syncedAt, error, start, pause, resume, stop };
+	function cancelStart() {
+		setPendingTaskId(null);
+	}
+
+	async function confirmStart() {
+		// Calls post() directly, not stop() and start(): this render's `entry` is
+		// still the old session after the stop, so start() would see the conflict
+		// again and only reopen the warning. The id is kept before the stop because
+		// its response clears pendingTaskId.
+		const taskId = pendingTaskId;
+		const stopped = await post("stop");
+		if (stopped) {
+			await post("start", { task: taskId });
+		}
+	}
+
+	return {
+		entry,
+		syncedAt,
+		error,
+		start,
+		pause,
+		resume,
+		stop,
+		pendingTaskId,
+		cancelStart,
+		confirmStart,
+	};
 }
