@@ -146,10 +146,9 @@ class TimerApiTests(TimesheetTestBase):
         with patch("django.utils.timezone.now", return_value=when):
             return self.client.post(reverse(url_name), {"task": self.task_a.id})
 
-    def test_get_without_open_session_returns_none(self):
+    def test_get_without_open_session_returns_no_content(self):
         response = self.client.get(reverse("timer-list"))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(response.data)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_start_opens_running_session(self):
         response = self.client.post(reverse("timer-start"), {"task": self.task_a.id})

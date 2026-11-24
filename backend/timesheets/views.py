@@ -18,8 +18,7 @@ class TimerViewSet(viewsets.ViewSet):
         entry = get_open_entry(request.user)
         if entry:
             return Response(TimeEntrySerializer(entry).data)
-        else:
-            return Response(None)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=["post"])
     def start(self, request):
