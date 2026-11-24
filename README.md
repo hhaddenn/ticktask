@@ -14,6 +14,7 @@ Não tenho um sítio único para os meus projetos e tarefas, para os bugs e suge
 - **Timer normal:** start, pause e stop por tarefa, com arredondamento das horas no stop. Só um timer ativo de cada vez. Regras em [docs/timer.md](docs/timer.md).
 - **Registo de tempo manual:** adicionar ou corrigir registos à mão.
 - **Totais:** horas por tarefa e por projeto.
+- **Estimativa:** tempo estimado por tarefa, comparado com o tempo registado (como as horas alocadas do Odoo).
 
 ## Should
 

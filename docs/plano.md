@@ -22,11 +22,11 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | M0              | 2 h (só a tarefa 3) |
 | M1              | 7,5 h               |
 | M2              | 32 h                |
-| M3              | 22 h                |
+| M3              | 24 h                |
 | M4              | 13 h                |
-| **MVP (M0–M4)** | **76,5 h**          |
+| **MVP (M0–M4)** | **78,5 h**          |
 | M5 (Should)     | 25 h                |
-| **Total**       | **101,5 h**         |
+| **Total**       | **103,5 h**         |
 
 | #   | Marco | Tarefa                                                                                                                    | Requisito | Estimativa | Real    | Estado                |
 | --- | ----- | ------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- | ------- | --------------------- |
@@ -57,6 +57,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 22  | M3    | Aviso de sessão esquecida                                                                                                 | Must      | 2 h        |         | por fazer             |
 | 23  | M3    | Registos de tempo manuais                                                                                                 | Must      | 2 h        |         | por fazer             |
 | 24  | M3    | Totais de horas por tarefa e por projeto                                                                                  | Must      | 2 h        |         | por fazer             |
+| 24b | M3    | Estimativa no formulário da tarefa e estimado vs. real                                                                    | Must      | 2 h        |         | por fazer             |
 | 25  | M3    | Preferências: bloco de arredondamento                                                                                     | Must      | 1 h        |         | por fazer             |
 | 26  | M4    | Dockerfiles do backend e do frontend (`arm64`)                                                                            |           | 4 h        |         | por fazer             |
 | 27  | M4    | Docker Compose e stack no Komodo (servir o `index.html` nas rotas do React Router)                                        |           | 3 h        |         | por fazer             |
