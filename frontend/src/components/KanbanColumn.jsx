@@ -8,6 +8,7 @@ export default function KanbanColumn({
 	onEditTask,
 	onTaskCreated,
 	readOnly,
+	timer,
 }) {
 	return (
 		<li className="flex w-72 shrink-0 flex-col gap-2 rounded-xl bg-slate-200/60 p-2 dark:bg-slate-900">
@@ -39,6 +40,8 @@ export default function KanbanColumn({
 										ref={provided.innerRef}
 										{...provided.draggableProps}
 										{...provided.dragHandleProps}
+										timer={timer}
+										readOnly={readOnly}
 									/>
 								)}
 							</Draggable>

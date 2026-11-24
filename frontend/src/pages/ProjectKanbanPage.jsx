@@ -6,6 +6,7 @@ import TaskForm from "../components/TaskForm";
 import Dialog from "../components/ui/Dialog";
 import { DragDropContext } from "@hello-pangea/dnd";
 import moveTask from "../kanban";
+import useTimer from "../hooks/useTimer";
 
 export default function ProjectKanbanPage() {
 	const { projectId } = useParams();
@@ -16,6 +17,7 @@ export default function ProjectKanbanPage() {
 	const [error, setError] = useState(null);
 	const [editingTask, setEditingTask] = useState(null);
 	const [moveError, setMoveError] = useState(null);
+	const timer = useTimer();
 
 	useEffect(() => {
 		let ignore = false;
@@ -139,6 +141,11 @@ export default function ProjectKanbanPage() {
 							{moveError}
 						</p>
 					)}
+					{timer.error && (
+						<p className="text-sm text-red-600 dark:text-red-400">
+							{timer.error}
+						</p>
+					)}
 					<DragDropContext onDragEnd={handleDragEnd}>
 						<ul className="flex items-start gap-4 overflow-x-auto pb-2">
 							{stages.map((stage) => (
@@ -155,6 +162,7 @@ export default function ProjectKanbanPage() {
 									onEditTask={setEditingTask}
 									onTaskCreated={handleTaskCreated}
 									readOnly={Boolean(project.archived_at)}
+									timer={timer}
 								/>
 							))}
 						</ul>
