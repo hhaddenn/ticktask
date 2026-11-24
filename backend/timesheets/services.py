@@ -27,7 +27,7 @@ def round_up_minutes(duration, block_minutes):
 def get_open_entry(user, lock=False):
     entry = TimeEntry.objects.filter(
         owner=user, source=TimeEntry.Source.TIMER, ended_at__isnull=True
-    )
+    ).select_related("task__project")
     if lock:
         entry = entry.select_for_update()
     return entry.first()

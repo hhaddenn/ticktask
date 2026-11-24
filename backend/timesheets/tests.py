@@ -282,6 +282,13 @@ class TimerApiTests(TimesheetTestBase):
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(TimeEntry.objects.count(), 1)
 
+    def test_open_session_includes_task_title_and_project_name(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.get(reverse("timer-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["task_title"], self.task_a.title)
+        self.assertEqual(response.data["project_name"], self.project_a.name)
+
 
 class RoundUpMinutesTests(SimpleTestCase):
     def test_rounds_up_to_next_block(self):

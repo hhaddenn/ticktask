@@ -18,6 +18,8 @@ class TimeEntrySerializer(serializers.ModelSerializer):
     intervals = TimerIntervalSerializer(many=True, read_only=True)
     state = serializers.SerializerMethodField()
     elapsed_seconds = serializers.SerializerMethodField()
+    task_title = serializers.CharField(source="task.title", read_only=True)
+    project_name = serializers.CharField(source="task.project.name", read_only=True)
 
     def get_state(self, obj):
         if obj.ended_at is not None:
@@ -50,6 +52,8 @@ class TimeEntrySerializer(serializers.ModelSerializer):
             "intervals",
             "state",
             "elapsed_seconds",
+            "task_title",
+            "project_name",
         ]
         read_only_fields = [
             "id",
