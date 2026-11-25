@@ -24,6 +24,7 @@ Não tenho um sítio único para os meus projetos e tarefas, para os bugs e suge
 - **Documentos:** separador com documentos gerais e guidelines, em markdown.
 - **Backlog:** tarefas do tipo bug / sugestão, criadas à mão, que depois passam para um projeto.
 - **Datas limite:** data limite numa tarefa e email de aviso quando se aproxima.
+- **Etapas personalizáveis** (como no Odoo): criar, renomear, apagar e reordenar as colunas de cada projeto, e escolher qual é a "Feito". Só se apagam etapas vazias, e nunca a última.
 
 ## Could
 
@@ -32,7 +33,7 @@ Não tenho um sítio único para os meus projetos e tarefas, para os bugs e suge
 - Vista Gantt das tarefas de um projeto (só visualização, com base em data de início e data limite).
 - Notificações do pomodoro com a app fechada (Web Push).
 - Comentários com data nas tarefas.
-- Reordenar e personalizar colunas, etiquetas, filtros e pesquisa.
+- Etiquetas, filtros e pesquisa.
 - Relatórios de tempo por semana/mês.
 
 ## Won't (v1)

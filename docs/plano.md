@@ -2,14 +2,14 @@
 
 ## Marcos
 
-| Marco | Entregável                                                                             | Data |
-| ----- | -------------------------------------------------------------------------------------- | ---- |
-| M0    | Requisitos, ADRs e modelos de dados fechados                                           |      |
-| M1    | Backend e frontend a correr em dev, ligados um ao outro                                |      |
-| M2    | Projetos e tarefas em kanban com drag and drop                                         |      |
-| M3    | Timer e registo de tempo, com totais                                                   |      |
-| M4    | Deploy na Raspberry                                                                    |      |
-| M5    | Funcionalidades Should: pomodoro, markdown, documentos, backlog, avisos de data limite |      |
+| Marco | Entregável                                                                                                     | Data |
+| ----- | -------------------------------------------------------------------------------------------------------------- | ---- |
+| M0    | Requisitos, ADRs e modelos de dados fechados                                                                   |      |
+| M1    | Backend e frontend a correr em dev, ligados um ao outro                                                        |      |
+| M2    | Projetos e tarefas em kanban com drag and drop                                                                 |      |
+| M3    | Timer e registo de tempo, com totais                                                                           |      |
+| M4    | Deploy na Raspberry                                                                                            |      |
+| M5    | Funcionalidades Should: pomodoro, markdown, documentos, backlog, avisos de data limite, etapas personalizáveis |      |
 
 M0 a M4 são o MVP. As tarefas de M3 em diante são mais grossas: parte-as em tarefas de 1–4 h quando chegares lá.
 
@@ -25,8 +25,8 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | M3              | 24 h                |
 | M4              | 13 h                |
 | **MVP (M0–M4)** | **78,5 h**          |
-| M5 (Should)     | 25 h                |
-| **Total**       | **103,5 h**         |
+| M5 (Should)     | 33 h                |
+| **Total**       | **111,5 h**         |
 
 | #   | Marco | Tarefa                                                                                                                    | Requisito | Estimativa | Real    | Estado                |
 | --- | ----- | ------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- | ------- | --------------------- |
@@ -70,6 +70,8 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 33  | M5    | Backlog: tarefas do tipo bug / sugestão                                                                                   | Should    | 3 h        |         | por fazer             |
 | 34  | M5    | Data limite e serviço `scheduler` com email de aviso                                                                      | Should    | 6 h        |         | por fazer             |
 | 35  | M5    | Estimativa em pomodoros e contador feitos / estimados                                                                     | Should    | 2 h        |         | por fazer             |
+| 36  | M5    | API de etapas: criar, renomear, apagar (só vazias e nunca a última), reordenar e `is_done`                                | Should    | 3 h        |         | por fazer             |
+| 36b | M5    | React: adicionar, editar e apagar colunas no kanban, e reordená-las com drag and drop                                     | Should    | 5 h        |         | por fazer             |
 
 ## Riscos
 
