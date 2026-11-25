@@ -2,8 +2,9 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers import TimeEntrySerializer, TimerStartSerializer
+from .serializers import TimeEntrySerializer, TimerStartSerializer, TimerStopSerializer
 from .services import (
+    InvalidEndTimeError,
     TimerStateError,
     get_open_entry,
     pause_timer,
@@ -49,8 +50,15 @@ class TimerViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["post"])
     def stop(self, request):
+        serializer = TimerStopSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        ended_at = serializer.validated_data.get("ended_at")
         try:
-            entry = stop_timer(request.user)
+            entry = stop_timer(request.user, ended_at)
             return Response(TimeEntrySerializer(entry).data)
         except TimerStateError as e:
             return Response({"detail": str(e)}, status=status.HTTP_409_CONFLICT)
+        # 400 and not 409: the timer state allows a stop, only the end time sent is
+        # wrong, so the same request with another time works (the UI shows it by the field).
+        except InvalidEndTimeError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

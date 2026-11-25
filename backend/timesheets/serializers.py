@@ -20,6 +20,7 @@ class TimeEntrySerializer(serializers.ModelSerializer):
     elapsed_seconds = serializers.SerializerMethodField()
     task_title = serializers.CharField(source="task.title", read_only=True)
     project_name = serializers.CharField(source="task.project.name", read_only=True)
+    is_forgotten = serializers.SerializerMethodField()
 
     def get_state(self, obj):
         if obj.ended_at is not None:
@@ -38,6 +39,16 @@ class TimeEntrySerializer(serializers.ModelSerializer):
             total += (interval.ended_at or now) - interval.started_at
         return int(total.total_seconds())
 
+    def get_is_forgotten(self, obj):
+        ended_at = obj.ended_at
+        date = obj.date
+        if ended_at is None:
+            # localdate(), not now().date(): date was saved with the Lisbon day on
+            # start, and right after midnight in summer the UTC day is still yesterday.
+            if date < timezone.localdate():
+                return True
+        return False
+
     class Meta:
         model = TimeEntry
         fields = [
@@ -54,6 +65,7 @@ class TimeEntrySerializer(serializers.ModelSerializer):
             "elapsed_seconds",
             "task_title",
             "project_name",
+            "is_forgotten",
         ]
         read_only_fields = [
             "id",
@@ -79,3 +91,7 @@ class TimerStartSerializer(serializers.Serializer):
         if task.project.archived_at is not None:
             raise serializers.ValidationError("The task's project is archived")
         return task
+
+
+class TimerStopSerializer(serializers.Serializer):
+    ended_at = serializers.DateTimeField(required=False)

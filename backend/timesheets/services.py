@@ -13,6 +13,10 @@ class TimerStateError(Exception):
     pass
 
 
+class InvalidEndTimeError(Exception):
+    pass
+
+
 # Always rounds up, so no work is left out (timer.md rule 9): 10 min counts as
 # 15, never 0. Works from seconds, not whole minutes, so 15 min 30 s becomes 30
 # instead of being truncated to 15 first. Sub-second leftovers are dropped.
@@ -81,19 +85,30 @@ def resume_timer(user):
 
 
 @transaction.atomic
-def stop_timer(user):
+def stop_timer(user, ended_at=None):
     opened_entry = get_open_entry(user, lock=True)
     now = timezone.now()
     if opened_entry is None:
         raise TimerStateError("There is no opened session")
     interval = opened_entry.intervals.filter(ended_at__isnull=True).first()
+    # Checked here and not in the serializer: the limits depend on the running
+    # interval, which is locked by get_open_entry until the transaction ends.
+    if ended_at is not None:
+        # Paused means no running interval to close, and stopping now already gives
+        # the right total (pauses don't count), so an end time makes no sense.
+        if interval is None:
+            raise TimerStateError("The session is paused: stop it without an end time")
+        if ended_at > now:
+            raise InvalidEndTimeError("The end time can't be in the future")
+        if ended_at <= interval.started_at:
+            raise InvalidEndTimeError("The end time must be after the timer was started")
     if interval is not None:
-        interval.ended_at = now
+        interval.ended_at = ended_at or now
         interval.save()
     total = timedelta()
     for item in opened_entry.intervals.all():
         total += item.ended_at - item.started_at
     opened_entry.minutes = round_up_minutes(total, DEFAULT_ROUNDING_MINUTES)
-    opened_entry.ended_at = now
+    opened_entry.ended_at = ended_at or now
     opened_entry.save()
     return opened_entry

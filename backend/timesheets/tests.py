@@ -13,7 +13,14 @@ from rest_framework.test import APITestCase
 from projects.models import Project, Stage, Task
 
 from .models import TimeEntry, TimerInterval
-from .services import round_up_minutes
+from .services import (
+    InvalidEndTimeError,
+    TimerStateError,
+    pause_timer,
+    round_up_minutes,
+    start_timer,
+    stop_timer,
+)
 
 
 # Shared setup only, no tests: if it had test_ methods, every subclass would run
@@ -145,6 +152,10 @@ class TimerApiTests(TimesheetTestBase):
     def _post_at(self, url_name, when):
         with patch("django.utils.timezone.now", return_value=when):
             return self.client.post(reverse(url_name), {"task": self.task_a.id})
+
+    def _get_at(self, when):
+        with patch("django.utils.timezone.now", return_value=when):
+            return self.client.get(reverse("timer-list"))
 
     def test_get_without_open_session_returns_no_content(self):
         response = self.client.get(reverse("timer-list"))
@@ -288,6 +299,122 @@ class TimerApiTests(TimesheetTestBase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["task_title"], self.task_a.title)
         self.assertEqual(response.data["project_name"], self.project_a.name)
+
+    def test_open_session_from_yesterday_is_forgotten(self):
+        t = datetime(2026, 7, 15, 20, 30, tzinfo=UTC)
+        self._post_at(url_name="timer-start", when=t)
+        response = self._get_at(when=t + timedelta(days=1))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_forgotten"])
+
+    def test_open_session_from_today_is_not_forgotten(self):
+        t = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        self._post_at("timer-start", t)
+        response = self._get_at(t + timedelta(hours=2))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_forgotten"])
+
+    def test_stopped_session_is_not_forgotten(self):
+        t = datetime(2026, 7, 15, 20, 30, tzinfo=UTC)
+        self._post_at("timer-start", t)
+        response = self._post_at("timer-stop", t + timedelta(days=1))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_forgotten"])
+
+    # In July, 23:30 UTC is already 00:30 of the next day in Lisbon. Comparing with
+    # the UTC date would still see "today" and miss the warning.
+    def test_session_from_yesterday_is_forgotten_after_midnight_in_lisbon(self):
+        started = datetime(2026, 7, 15, 20, 0, tzinfo=UTC)  # 21:00 on the 15th in Lisbon
+        after_midnight = datetime(2026, 7, 15, 23, 30, tzinfo=UTC)  # 00:30 on the 16th in Lisbon
+        self._post_at("timer-start", started)
+        response = self._get_at(after_midnight)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_forgotten"])
+
+    def test_stop_with_end_time_closes_session_at_that_time(self):
+        started = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        self._post_at("timer-start", started)
+        with patch("django.utils.timezone.now", return_value=started + timedelta(hours=3)):
+            response = self.client.post(
+                reverse("timer-stop"), {"ended_at": (started + timedelta(hours=1)).isoformat()}
+            )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["minutes"], 60)
+
+    def test_stop_with_end_time_in_future_returns_400(self):
+        started = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=started):
+            self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        with patch("django.utils.timezone.now", return_value=started + timedelta(hours=3)):
+            response = self.client.post(
+                reverse("timer-stop"), {"ended_at": (started + timedelta(hours=4)).isoformat()}
+            )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "The end time can't be in the future")
+
+    def test_stop_with_malformed_end_time_returns_400(self):
+        self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        response = self.client.post(reverse("timer-stop"), {"ended_at": "not-a-date"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("ended_at", response.data)
+
+    def test_stop_with_end_time_while_paused_returns_409(self):
+        started = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=started):
+            self.client.post(reverse("timer-start"), {"task": self.task_a.id})
+        with patch("django.utils.timezone.now", return_value=started + timedelta(hours=1)):
+            self.client.post(reverse("timer-pause"))
+        with patch("django.utils.timezone.now", return_value=started + timedelta(hours=3)):
+            response = self.client.post(
+                reverse("timer-stop"),
+                {"ended_at": (started + timedelta(hours=1, minutes=30)).isoformat()},
+            )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(
+            response.data["detail"], "The session is paused: stop it without an end time"
+        )
+
+
+class StopTimerServiceTests(TimesheetTestBase):
+    def test_stop_with_end_time_closes_session_at_that_time(self):
+        now = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=now):
+            entry = start_timer(self.user, self.task_a)
+        with patch("django.utils.timezone.now", return_value=now + timedelta(hours=3)):
+            entry = stop_timer(self.user, ended_at=now + timedelta(hours=1))
+        self.assertEqual(entry.ended_at, now + timedelta(hours=1))
+        self.assertEqual(entry.intervals.get().ended_at, now + timedelta(hours=1))
+        self.assertEqual(entry.minutes, 60)
+
+    def test_stop_with_end_time_in_future_is_rejected(self):
+        now = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=now):
+            entry = start_timer(self.user, self.task_a)
+        with patch("django.utils.timezone.now", return_value=now + timedelta(hours=3)):
+            with self.assertRaises(InvalidEndTimeError):
+                stop_timer(self.user, ended_at=now + timedelta(hours=4))
+        entry.refresh_from_db()
+        self.assertIsNone(entry.ended_at)
+
+    def test_stop_with_end_time_before_interval_start_is_rejected(self):
+        now = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=now):
+            entry = start_timer(self.user, self.task_a)
+        with patch("django.utils.timezone.now", return_value=now + timedelta(hours=3)):
+            with self.assertRaises(InvalidEndTimeError):
+                stop_timer(self.user, ended_at=now - timedelta(hours=1))
+        entry.refresh_from_db()
+        self.assertIsNone(entry.ended_at)
+
+    def test_stop_with_end_time_while_paused_is_rejected(self):
+        now = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)
+        with patch("django.utils.timezone.now", return_value=now):
+            start_timer(self.user, self.task_a)
+        with patch("django.utils.timezone.now", return_value=now + timedelta(hours=1)):
+            pause_timer(self.user)
+        with patch("django.utils.timezone.now", return_value=now + timedelta(hours=3)):
+            with self.assertRaises(TimerStateError):
+                stop_timer(self.user, ended_at=now + timedelta(hours=1, minutes=30))
 
 
 class RoundUpMinutesTests(SimpleTestCase):
