@@ -6,10 +6,9 @@ import TaskForm from "../components/TaskForm";
 import Dialog from "../components/ui/Dialog";
 import { DragDropContext } from "@hello-pangea/dnd";
 import moveTask from "../kanban";
-import useTimer from "../hooks/useTimer";
 import TimerConflictDialog from "../components/TimerConflictDialog";
 
-export default function ProjectKanbanPage() {
+export default function ProjectKanbanPage({ timer }) {
 	const { projectId } = useParams();
 	const [project, setProject] = useState(null);
 	const [stages, setStages] = useState([]);
@@ -18,7 +17,6 @@ export default function ProjectKanbanPage() {
 	const [error, setError] = useState(null);
 	const [editingTask, setEditingTask] = useState(null);
 	const [moveError, setMoveError] = useState(null);
-	const timer = useTimer();
 
 	useEffect(() => {
 		let ignore = false;

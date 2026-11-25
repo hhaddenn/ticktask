@@ -40,7 +40,14 @@ sessão = 7h07 → arredondado = 7h15 → lançado no registo de horas do dia
 
 ## Sessões esquecidas
 
-10. Se ao abrir a app houver uma sessão aberta desde um dia anterior, a app avisa e pergunta se a quer fechar.
+10. Se ao abrir a app houver uma sessão aberta desde um dia anterior, a app avisa e pergunta se a quer fechar. "Dia anterior" compara o dia em que a sessão começou com o dia de hoje **em Lisboa**, e quem decide é o servidor. O aviso aparece em qualquer página e tem três opções:
+    - "Fechar sessão"
+    - "Fechar e começar nova agora": fecha a sessão antiga e abre outra na mesma tarefa, a contar de agora, para cada dia ficar com as suas horas.
+    - "Ignorar": por exemplo, quando ainda está a trabalhar depois da meia-noite. Vale até a app ser aberta de novo.
+
+    A hora de fecho depende do estado da sessão:
+    - **A correr:** o aviso pergunta a que horas parou, porque fechar "agora" contaria a noite inteira. A hora tem de ser depois do último start ou resume, e não pode ser no futuro.
+    - **Em pausa:** fecha agora, sem perguntar a hora. A pausa não conta (regra 3), por isso o total já está certo.
 
 ## Pomodoro
 

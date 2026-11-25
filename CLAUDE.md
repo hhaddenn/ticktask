@@ -51,10 +51,12 @@ Notas:
   - `config/`: settings, URLs, WSGI/ASGI (só configuração)
   - `accounts/`: `User` próprio e preferências, e a autenticação por sessão em `/api/auth/` (`me/`, `login/`, `logout/`)
   - `projects/`: `Project`, `Stage` e `Task`, com a API em `/api/` (`projects/`, `stages/`, `tasks/`), incluindo arquivar projetos e mover tarefas no kanban
-  - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). API do timer em `/api/timer/` (`GET` devolve a sessão aberta, ou 204 se não houver; `start/`, `pause/`, `resume/`, `stop/`), com a lógica em `services.py`, incluindo o arredondamento do total no stop
+  - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). API do timer em `/api/timer/` (`GET` devolve a sessão aberta, com `is_forgotten` se for de um dia anterior em Lisboa, ou 204 se não houver; `start/`, `pause/`, `resume/`, `stop/`), com a lógica em `services.py`, incluindo o arredondamento do total no stop. O `stop/` aceita um `ended_at` opcional, para as sessões esquecidas: dá 400 se a hora for inválida (no futuro, ou antes do intervalo a correr) e 409 se a sessão estiver em pausa
 - `docker-compose.dev.yml`: Postgres para desenvolvimento
 - `frontend/`: aplicação React (Vite, JavaScript, ESLint, Prettier com tabs)
-  - `src/hooks/useTimer.js`: estado do timer (sessão aberta e âncora `syncedAt`) e as ações start, pause, resume e stop. Chamado uma só vez, na página do kanban, e passado por props
+  - `src/components/AppLayout.jsx`: cabeçalho e rotas, só depois do login. Chama o `useTimer` e mostra o aviso de sessão esquecida
+  - `src/hooks/useTimer.js`: estado do timer (sessão aberta e âncora `syncedAt`) e as ações start, pause, resume e stop (com hora de fim opcional), mais `stopAndRestart`, `dismissForgotten` e o derivado `isForgotten`. Chamado uma só vez, no `AppLayout`, e passado por props
+  - `src/components/ForgottenSessionDialog.jsx`: aviso de sessão esquecida, com a hora de fim (só com a sessão a correr) e as três opções da regra 10 da [timer.md](docs/timer.md)
   - `src/components/TimerDisplay.jsx`: contador ao vivo, derivado do `elapsed_seconds` do servidor mais o tempo local desde a resposta
   - `src/timer.js`: `formatDuration` (segundos → `H:MM:SS`)
 - `docs/`: plano, ADRs, registo de horas

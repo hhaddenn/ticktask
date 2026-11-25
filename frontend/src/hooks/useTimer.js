@@ -10,6 +10,7 @@ export default function useTimer() {
 	const [syncedAt, setSyncedAt] = useState(null);
 	const [error, setError] = useState(null);
 	const [pendingTaskId, setPendingTaskId] = useState(null);
+	const [forgottenDismissed, setForgottenDismissed] = useState(false);
 
 	function applyResponse(data) {
 		// Stop returns the closed session; for the UI that means "no timer".
@@ -117,8 +118,12 @@ export default function useTimer() {
 	async function resume() {
 		await post("resume");
 	}
-	async function stop() {
-		await post("stop");
+	async function stop(endedAt) {
+		if (endedAt) {
+			return await post("stop", { ended_at: endedAt });
+		} else {
+			return await post("stop");
+		}
 	}
 
 	function cancelStart() {
@@ -137,6 +142,25 @@ export default function useTimer() {
 		}
 	}
 
+	async function stopAndRestart(endedAt) {
+		// The task id is read before the stop: its response sets entry to null.
+		// start() isn't used for the same reason as in confirmStart: this render's
+		// `entry` is still the old session and it would see a conflict.
+		const task = entry.task;
+		const stopped = await stop(endedAt);
+		if (stopped) {
+			await post("start", { task });
+		}
+	}
+
+	function dismissForgotten() {
+		setForgottenDismissed(true);
+	}
+
+	// Derived on every render, not a useState: it always follows entry and
+	// forgottenDismissed, so it can't get out of sync with them.
+	const isForgotten = entry?.is_forgotten === true && !forgottenDismissed;
+
 	return {
 		entry,
 		syncedAt,
@@ -148,5 +172,8 @@ export default function useTimer() {
 		pendingTaskId,
 		cancelStart,
 		confirmStart,
+		dismissForgotten,
+		stopAndRestart,
+		isForgotten,
 	};
 }
