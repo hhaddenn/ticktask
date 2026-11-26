@@ -7,6 +7,7 @@ import Dialog from "../components/ui/Dialog";
 import { DragDropContext } from "@hello-pangea/dnd";
 import moveTask from "../kanban";
 import TimerConflictDialog from "../components/TimerConflictDialog";
+import TimeEntryList from "../components/TimeEntryList";
 
 export default function ProjectKanbanPage({ timer }) {
 	const { projectId } = useParams();
@@ -129,12 +130,15 @@ export default function ProjectKanbanPage({ timer }) {
 					</div>
 					<Dialog open={editingTask !== null} onClose={closeDialog}>
 						{editingTask && (
-							<TaskForm
-								key={editingTask.id}
-								task={editingTask}
-								onCancel={closeDialog}
-								onSaved={handleTaskSaved}
-							/>
+							<div className="flex flex-col gap-4">
+								<TaskForm
+									key={editingTask.id}
+									task={editingTask}
+									onCancel={closeDialog}
+									onSaved={handleTaskSaved}
+								/>
+								<TimeEntryList taskId={editingTask.id} />
+							</div>
 						)}
 					</Dialog>
 					{moveError && (

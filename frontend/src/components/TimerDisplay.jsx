@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import formatDuration from "../timer";
+import { formatDuration } from "../timer";
 
 export default function TimerDisplay({ seconds, syncedAt, running }) {
 	const [now, setNow] = useState(() => performance.now());

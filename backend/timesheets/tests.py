@@ -375,6 +375,239 @@ class TimerApiTests(TimesheetTestBase):
         )
 
 
+class TimeEntryApiTests(TimesheetTestBase):
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def _manual_entry(self, owner, task, date=None, minutes=30):
+        date = date or timezone.localdate()
+        return TimeEntry.objects.create(
+            owner=owner, task=task, date=date, minutes=minutes, source=TimeEntry.Source.MANUAL
+        )
+
+    # No intervals on purpose: the time entries API only reads and edits the entry's
+    # own fields (minutes, date, description), never the exact times behind it.
+    def _closed_timer_entry(self, owner, task, date):
+        started_at = timezone.now()
+        ended_at = started_at + timedelta(hours=1)
+        return TimeEntry.objects.create(
+            owner=owner, started_at=started_at, ended_at=ended_at, date=date, task=task, minutes=60
+        )
+
+    def test_create_manual_entry(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": self.task_a.id, "date": timezone.localdate(), "minutes": 30},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        entry = TimeEntry.objects.get(id=response.data["id"])
+        self.assertEqual(entry.source, TimeEntry.Source.MANUAL)
+        self.assertEqual(entry.owner, self.user)
+
+    def test_create_ignores_source_sent_by_client(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {
+                "task": self.task_a.id,
+                "date": timezone.localdate(),
+                "minutes": 30,
+                "source": "timer",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["source"], "manual")
+
+    def test_create_without_minutes_is_rejected(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": self.task_a.id, "date": timezone.localdate()},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("minutes", response.data)
+
+    def test_create_with_zero_minutes_is_rejected(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": self.task_a.id, "date": timezone.localdate(), "minutes": 0},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("minutes", response.data)
+
+    def test_create_with_future_date_is_rejected(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {
+                "task": self.task_a.id,
+                "date": timezone.localdate() + timedelta(days=1),
+                "minutes": 30,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+
+    def test_create_with_today_is_allowed(self):
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": self.task_a.id, "date": timezone.localdate(), "minutes": 30},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_on_other_users_task_is_rejected(self):
+        new_project = Project.objects.create(owner=self.other_user, name="Project A")
+        new_stage = Stage.objects.create(project=new_project, name="Stage A")
+        new_task = Task.objects.create(project=new_project, stage=new_stage, title="Task A")
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": new_task.id, "date": timezone.localdate(), "minutes": 30},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("task", response.data)
+
+    def test_create_on_archived_project_is_rejected(self):
+        new_project = Project.objects.create(
+            owner=self.user, name="Project A", archived_at=timezone.now()
+        )
+        new_stage = Stage.objects.create(project=new_project, name="Stage A")
+        new_task = Task.objects.create(project=new_project, stage=new_stage, title="Task A")
+        response = self.client.post(
+            reverse("time-entry-list"),
+            {"task": new_task.id, "date": timezone.localdate(), "minutes": 30},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("task", response.data)
+
+    def test_list_excludes_open_timer_session(self):
+        entry = self._open_entry(self.user)
+        self._closed_timer_entry(self.user, self.task_a, timezone.localdate())
+        self._manual_entry(self.user, self.task_a)
+        response = self.client.get(reverse("time-entry-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [e["id"] for e in response.data]
+        self.assertEqual(len(response.data), 2)
+        self.assertNotIn(entry.id, ids)
+
+    # Manual entries also have ended_at NULL, like the open session. An exclude on
+    # ended_at alone (without source=timer) would drop them from the list.
+    def test_list_keeps_manual_entries(self):
+        entry = self._manual_entry(self.user, self.task_a)
+        response = self.client.get(reverse("time-entry-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [e["id"] for e in response.data]
+        self.assertEqual(len(response.data), 1)
+        self.assertIn(entry.id, ids)
+
+    def test_list_filters_by_task(self):
+        new_task = Task.objects.create(project=self.project_a, stage=self.stage_a, title="Task A")
+        entry_a = self._manual_entry(self.user, self.task_a)
+        self._manual_entry(self.user, new_task)
+        response = self.client.get(reverse("time-entry-list"), {"task": self.task_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [e["id"] for e in response.data]
+        self.assertEqual(ids, [entry_a.id])
+
+    def test_list_hides_other_users_entries(self):
+        self._manual_entry(self.other_user, self.task_a)
+        response = self.client.get(reverse("time-entry-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [e["id"] for e in response.data]
+        self.assertEqual(ids, [])
+
+    def test_open_timer_session_detail_is_not_found(self):
+        entry = self._open_entry(self.user)
+        response = self.client.get(reverse("time-entry-detail", args=[entry.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]), {"minutes": 10}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        response = self.client.delete(reverse("time-entry-detail", args=[entry.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_other_users_entry_is_not_found(self):
+        entry = self._manual_entry(self.other_user, self.task_a)
+        response = self.client.get(reverse("time-entry-detail", args=[entry.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_patch_minutes_on_timer_session(self):
+        entry = self._closed_timer_entry(self.user, self.task_a, date=timezone.localdate())
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]), {"minutes": 45}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        entry.refresh_from_db()
+        self.assertEqual(entry.minutes, 45)
+
+    def test_patch_date_on_timer_session_is_rejected(self):
+        entry = self._closed_timer_entry(self.user, self.task_a, date=timezone.localdate())
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]),
+            {"date": timezone.localdate() - timedelta(days=1)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("date", response.data)
+
+    def test_patch_date_on_manual_entry(self):
+        entry = self._manual_entry(self.user, self.task_a)
+        yesterday  = timezone.localdate() - timedelta(days=1)
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]),
+            {"date": yesterday},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        entry.refresh_from_db()
+        self.assertEqual(entry.date, yesterday)
+
+    def test_patch_task_is_rejected(self):
+        entry = self._manual_entry(self.user, self.task_a)
+        new_task = Task.objects.create(project=self.project_a, stage=self.stage_a, title="Task A")
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]), {"task": new_task.id}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("task", response.data)
+
+    def test_patch_on_archived_project_entry(self):
+        new_project = Project.objects.create(
+            owner=self.user, name="Project A", archived_at=timezone.now()
+        )
+        new_stage = Stage.objects.create(project=new_project, name="Stage A")
+        new_task = Task.objects.create(project=new_project, stage=new_stage, title="Task A")
+        entry = self._manual_entry(self.user, new_task)
+        response = self.client.patch(
+            reverse("time-entry-detail", args=[entry.id]), {"minutes": 45}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_entry(self):
+        entry = self._closed_timer_entry(self.user, self.task_a, timezone.localdate())
+        interval = TimerInterval.objects.create(
+            entry=entry, started_at=entry.started_at, ended_at=entry.ended_at
+        )
+        response = self.client.delete(reverse("time-entry-detail", args=[entry.id]))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(TimeEntry.objects.filter(id=entry.id).exists())
+        self.assertFalse(TimerInterval.objects.filter(id=interval.id).exists())
+
+    def test_put_is_not_allowed(self):
+        entry = self._manual_entry(self.user, self.task_a)
+        response = self.client.put(
+            reverse("time-entry-detail", args=[entry.id]),
+            {"task": self.task_a.id, "date": timezone.localdate(), "minutes": 30},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 class StopTimerServiceTests(TimesheetTestBase):
     def test_stop_with_end_time_closes_session_at_that_time(self):
         now = datetime(2026, 7, 15, 9, 0, tzinfo=UTC)

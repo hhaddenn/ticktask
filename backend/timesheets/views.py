@@ -2,7 +2,13 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .serializers import TimeEntrySerializer, TimerStartSerializer, TimerStopSerializer
+from .models import TimeEntry
+from .serializers import (
+    TimeEntryRecordSerializer,
+    TimeEntrySerializer,
+    TimerStartSerializer,
+    TimerStopSerializer,
+)
 from .services import (
     InvalidEndTimeError,
     TimerStateError,
@@ -62,3 +68,23 @@ class TimerViewSet(viewsets.ViewSet):
         # wrong, so the same request with another time works (the UI shows it by the field).
         except InvalidEndTimeError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TimeEntryViewSet(viewsets.ModelViewSet):
+    serializer_class = TimeEntryRecordSerializer
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+
+    def get_queryset(self):
+        entries = self.request.user.time_entries.all()
+        # The open timer session belongs to /api/timer/ (pause, resume, stop), so it's
+        # left out here: editing or deleting it from this API gives a 404.
+        entries = entries.exclude(source=TimeEntry.Source.TIMER, ended_at__isnull=True)
+        task = self.request.query_params.get("task")
+        if task and task.isdigit():
+            entries = entries.filter(task__id=task)
+        return entries
+
+    def perform_create(self, serializer):
+        # Always manual: timer sessions are only created by /api/timer/start/, with
+        # intervals. A "timer" entry made here would have no exact times behind it.
+        serializer.save(owner=self.request.user, source=TimeEntry.Source.MANUAL)
