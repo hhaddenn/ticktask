@@ -85,20 +85,20 @@ Com `AUTH_USER_MODEL = "accounts.User"` nas settings.
 
 ## Tarefa (`Task`)
 
-| Campo                  | Tipo                   | Obrigatório?       | Omissão        | Notas                                                                                                                            |
-| ---------------------- | ---------------------- | ------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `project`              | FK → Project           | sim                |                | `CASCADE`                                                                                                                        |
-| `stage`                | FK → Stage             | sim                |                | `RESTRICT`: não se apaga uma etapa com tarefas (ver nota)                                                                        |
-| `milestone`            | FK → Milestone         | não                | `NULL`         | `SET_NULL`: apagar o milestone não apaga as tarefas                                                                              |
-| `title`                | `CharField(255)`       | sim                |                |                                                                                                                                  |
-| `description`          | `TextField`            | não (`blank=True`) | `""`           | Markdown, com checkboxes, listas e cabeçalhos                                                                                    |
-| `sequence`             | `PositiveIntegerField` | sim                | `0`            | Ordem dentro da coluna, para o drag and drop                                                                                     |
-| `start_date`           | `DateField`            | não                | `NULL`         | Para o Gantt (Could)                                                                                                             |
-| `due_date`             | `DateField`            | não                | `NULL`         | Data limite                                                                                                                      |
-| `deadline_notified_at` | `DateTimeField`        | não                | `NULL`         | Quando foi enviado o aviso de data limite (ADR 0003). É limpo quando `due_date` muda                                             |
+| Campo                  | Tipo                   | Obrigatório?       | Omissão        | Notas                                                                                 |
+| ---------------------- | ---------------------- | ------------------ | -------------- | ------------------------------------------------------------------------------------- |
+| `project`              | FK → Project           | sim                |                | `CASCADE`                                                                             |
+| `stage`                | FK → Stage             | sim                |                | `RESTRICT`: não se apaga uma etapa com tarefas (ver nota)                             |
+| `milestone`            | FK → Milestone         | não                | `NULL`         | `SET_NULL`: apagar o milestone não apaga as tarefas                                   |
+| `title`                | `CharField(255)`       | sim                |                |                                                                                       |
+| `description`          | `TextField`            | não (`blank=True`) | `""`           | Markdown, com checkboxes, listas e cabeçalhos                                         |
+| `sequence`             | `PositiveIntegerField` | sim                | `0`            | Ordem dentro da coluna, para o drag and drop                                          |
+| `start_date`           | `DateField`            | não                | `NULL`         | Para o Gantt (Could)                                                                  |
+| `due_date`             | `DateField`            | não                | `NULL`         | Data limite                                                                           |
+| `deadline_notified_at` | `DateTimeField`        | não                | `NULL`         | Quando foi enviado o aviso de data limite (ADR 0003). É limpo quando `due_date` muda  |
 | `estimated_minutes`    | `PositiveIntegerField` | não                | `NULL`         | Estimativa, como as "horas alocadas" do Odoo. Permite comparar o estimado com o real. |
-| `created_at`           | `DateTimeField`        | auto               | `auto_now_add` |                                                                                                                                  |
-| `updated_at`           | `DateTimeField`        | auto               | `auto_now`     |                                                                                                                                  |
+| `created_at`           | `DateTimeField`        | auto               | `auto_now_add` |                                                                                       |
+| `updated_at`           | `DateTimeField`        | auto               | `auto_now`     |                                                                                       |
 
 - `Meta.ordering = ["stage__sequence", "sequence", "id"]`.
 - **Data, não data e hora**, nas datas da tarefa: é a granularidade do Odoo e chega para os avisos.
@@ -139,24 +139,37 @@ TimeEntry  (tarefa X, 2026-11-06, 7h15 arredondado)
 
 ### `TimeEntry` (sessão / lançamento de horas)
 
-| Campo         | Tipo                                          | Obrigatório?       | Omissão        | Notas                                                                                                                 |
-| ------------- | --------------------------------------------- | ------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `owner`       | FK → User                                     | sim                |                | `CASCADE`                                                                                                             |
-| `task`        | FK → Task                                     | sim                |                | `PROTECT`: não se apaga uma tarefa (nem um projeto) com horas registadas                                              |
-| `source`      | `CharField` com choices `timer` / `manual`    | sim                | `timer`        |                                                                                                                       |
-| `mode`        | `CharField` com choices `normal` / `pomodoro` | sim                | `normal`       | Só faz sentido quando `source=timer`                                                                                  |
-| `date`        | `DateField`                                   | sim                |                | Dia a que as horas pertencem. No timer, é o dia do start (hora de Lisboa)                                             |
-| `started_at`  | `DateTimeField`                               | não                | `NULL`         | Início da sessão. `NULL` nos registos manuais                                                                         |
-| `ended_at`    | `DateTimeField`                               | não                | `NULL`         | Fim da sessão (stop). No timer, `NULL` = sessão aberta                                                                |
-| `minutes`     | `PositiveIntegerField`                        | não                | `NULL`         | **Minutos lançados.** No timer: o total arredondado, calculado no stop (regras 7–9). No registo manual: escrito à mão |
-| `description` | `TextField`                                   | não (`blank=True`) | `""`           | O que foi feito, como no Odoo                                                                                         |
-| `break_ends_at` | `DateTimeField` | não | `NULL` | Só no pomodoro: quando acaba a pausa em curso. Preenchido ao clicar para começar a pausa (`agora + duração`), limpo ao começar o foco seguinte. Permite retomar a contagem da pausa depois de recarregar a página |
-| `created_at`  | `DateTimeField`                               | auto               | `auto_now_add` |                                                                                                                       |
-| `updated_at`  | `DateTimeField`                               | auto               | `auto_now`     |                                                                                                                       |
+| Campo           | Tipo                                          | Obrigatório?       | Omissão        | Notas                                                                                                                                                                                                             |
+| --------------- | --------------------------------------------- | ------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `owner`         | FK → User                                     | sim                |                | `CASCADE`                                                                                                                                                                                                         |
+| `task`          | FK → Task                                     | sim                |                | `PROTECT`: não se apaga uma tarefa (nem um projeto) com horas registadas                                                                                                                                          |
+| `source`        | `CharField` com choices `timer` / `manual`    | sim                | `timer`        |                                                                                                                                                                                                                   |
+| `mode`          | `CharField` com choices `normal` / `pomodoro` | sim                | `normal`       | Só faz sentido quando `source=timer`                                                                                                                                                                              |
+| `date`          | `DateField`                                   | sim                |                | Dia a que as horas pertencem. No timer, é o dia do start (hora de Lisboa)                                                                                                                                         |
+| `started_at`    | `DateTimeField`                               | não                | `NULL`         | Início da sessão. `NULL` nos registos manuais                                                                                                                                                                     |
+| `ended_at`      | `DateTimeField`                               | não                | `NULL`         | Fim da sessão (stop). No timer, `NULL` = sessão aberta                                                                                                                                                            |
+| `minutes`       | `PositiveIntegerField`                        | não                | `NULL`         | **Minutos lançados.** No timer: o total arredondado, calculado no stop (regras 7–9). No registo manual: escrito à mão                                                                                             |
+| `description`   | `TextField`                                   | não (`blank=True`) | `""`           | O que foi feito, como no Odoo                                                                                                                                                                                     |
+| `break_ends_at` | `DateTimeField`                               | não                | `NULL`         | Só no pomodoro: quando acaba a pausa em curso. Preenchido ao clicar para começar a pausa (`agora + duração`), limpo ao começar o foco seguinte. Permite retomar a contagem da pausa depois de recarregar a página |
+| `created_at`    | `DateTimeField`                               | auto               | `auto_now_add` |                                                                                                                                                                                                                   |
+| `updated_at`    | `DateTimeField`                               | auto               | `auto_now`     |                                                                                                                                                                                                                   |
 
 **Tempos exatos vs. arredondados (regra 8):** os tempos exatos ficam nos `TimerInterval`. O valor arredondado fica em `TimeEntry.minutes`. Se o bloco de arredondamento mudar, os tempos reais não se perdem.
 
 **Sessão esquecida (regra 10):** não precisa de campo próprio. É um `TimeEntry` com `source=timer`, `ended_at` a `NULL` e `date` anterior a hoje.
+
+**Na API de registos (tarefa 23, `/api/time-entries/`):**
+
+- **Separada do timer:** o `/api/timer/` é a máquina de estados (start, pause, resume, stop). O `/api/time-entries/` é um CRUD normal (`GET`, `POST`, `PATCH`, `DELETE`; sem `PUT`) sobre os registos já fechados. `GET ?task=<id>` filtra por tarefa.
+- **A sessão aberta não aparece:** fica fora do queryset, por isso `GET`, `PATCH` e `DELETE` dão 404. Quem a controla é o `/api/timer/`.
+- **Criar é sempre manual:** o `source` é só de leitura e a view grava `source=manual`. As sessões do timer só nascem pelo start, com intervalos.
+- **Criar:** `minutes` obrigatório e ≥ 1; `date` não pode ser no futuro (hora de Lisboa); a tarefa tem de ser do utilizador e o projeto não pode estar arquivado.
+- **Corrigir:**
+  - **Registo manual:** `minutes`, `date` e `description`.
+  - **Sessão do timer:** só `minutes` e `description`. A `date` vem do start e tem de bater certo com os intervalos; mandar a mesma data é aceite. Os tempos exatos ficam nos intervalos (regra 8).
+  - **A `task` nunca muda** (400), como o `project` da tarefa.
+  - **Projeto arquivado:** corrigir continua a ser possível, para acertar horas antigas. Só criar é que é bloqueado.
+- **Apagar:** qualquer registo fechado, manual ou do timer. Os intervalos vão com ele (`CASCADE`).
 
 ### `TimerInterval` (período a correr)
 
@@ -202,7 +215,8 @@ A base de dados é a última linha de defesa: o que ela consegue garantir, garan
 | Um registo manual tem `minutes`                                       | Base de dados      | `CheckConstraint`: `source="timer"` ou `minutes` não é `NULL`                                                                                                                            |
 | Uma tarefa está numa etapa e num milestone **do seu próprio projeto** | Validação          | `clean()` / serializer (`validate`) / ação `move`. Uma constraint não consegue comparar campos de tabelas diferentes                                                                     |
 | O projeto de uma tarefa não muda; a etapa só muda pela ação `move`    | Validação          | `validate` do `TaskSerializer`, comparando com `self.instance`                                                                                                                           |
-| Um registo manual não tem intervalos                                  | Validação          | Serializer do `TimerInterval`                                                                                                                                                            |
+| Um registo manual não tem intervalos                                  | API                | Os intervalos só nascem pelo `/api/timer/`, que nunca trabalha sobre registos manuais. O `/api/time-entries/` não cria nem edita intervalos                                              |
+| A data de uma sessão do timer e a tarefa de um registo não mudam      | Validação          | `validate_task` e `validate` do `TimeEntryRecordSerializer`, comparando com `self.instance`                                                                                              |
 | `deadline_notified_at` é limpo quando `due_date` muda                 | Validação / lógica | No `update()` do `TaskSerializer`. Também quando a data é apagada (`due_date` passa a `NULL`)                                                                                            |
 | Só o dono vê e altera os seus dados                                   | API                | Filtrar sempre por `owner` nas views (nas tarefas e etapas, por `project__owner`). Um id de outro utilizador dá 404, como se não existisse. Na v1 só há um utilizador, mas o hábito fica |
 
