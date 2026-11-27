@@ -557,7 +557,7 @@ class TimeEntryApiTests(TimesheetTestBase):
 
     def test_patch_date_on_manual_entry(self):
         entry = self._manual_entry(self.user, self.task_a)
-        yesterday  = timezone.localdate() - timedelta(days=1)
+        yesterday = timezone.localdate() - timedelta(days=1)
         response = self.client.patch(
             reverse("time-entry-detail", args=[entry.id]),
             {"date": yesterday},
