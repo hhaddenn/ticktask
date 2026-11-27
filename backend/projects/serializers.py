@@ -5,13 +5,25 @@ from .models import Project, Stage, Task
 
 
 class ProjectSerializer(serializers.ModelSerializer):
+    logged_minutes = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Project
-        fields = ["id", "name", "description", "archived_at", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "name",
+            "description",
+            "archived_at",
+            "created_at",
+            "updated_at",
+            "logged_minutes",
+        ]
         read_only_fields = ["archived_at", "created_at", "updated_at"]
 
 
 class TaskSerializer(serializers.ModelSerializer):
+    logged_minutes = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Task
         extra_kwargs = {"stage": {"required": False}}
@@ -28,6 +40,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "estimated_minutes",
             "created_at",
             "updated_at",
+            "logged_minutes",
         ]
         read_only_fields = ["sequence", "deadline_notified_at", "created_at", "updated_at"]
 

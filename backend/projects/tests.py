@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
+
+from timesheets.models import TimeEntry
 
 from .models import Project, Stage, Task
 
@@ -394,3 +396,90 @@ class TaskApiTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class TaskLoggedMinutesTests(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="testuser", password="test")
+        cls.project_a = Project.objects.create(owner=cls.user, name="Project A")
+        cls.stage_a = Stage.objects.create(project=cls.project_a, name="Stage A")
+        cls.task_a = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task A")
+        cls.task_b = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task B")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def _manual_entry(self, owner, task, date=None, minutes=30):
+        date = date or timezone.localdate()
+        return TimeEntry.objects.create(
+            owner=owner, task=task, date=date, minutes=minutes, source=TimeEntry.Source.MANUAL
+        )
+
+    # No intervals on purpose: the totals only read the entry's minutes, never the
+    # exact times behind it.
+    def _stopped_timer_entry(self, owner, task, date=None, minutes=45):
+        date = date or timezone.localdate()
+        started_at = timezone.now()
+        ended_at = started_at + timedelta(minutes=minutes)
+        return TimeEntry.objects.create(
+            owner=owner,
+            date=date,
+            task=task,
+            started_at=started_at,
+            ended_at=ended_at,
+            minutes=minutes,
+        )
+
+    # No minutes on purpose: a real open session has minutes=NULL until stop. With
+    # minutes=0 the "open session not counted" test would pass even if Sum counted it.
+    def _open_timer_entry(self, owner, task, date=None):
+        date = date or timezone.localdate()
+        started_at = timezone.now()
+        return TimeEntry.objects.create(owner=owner, task=task, date=date, started_at=started_at)
+
+    def test_task_without_entries_has_zero(self):
+        response = self.client.get(reverse("task-detail", args=[self.task_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 0)
+
+    def test_sums_manual_and_stopped_timer_entries(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._stopped_timer_entry(owner=self.user, task=self.task_a, minutes=45)
+        response = self.client.get(reverse("task-detail", args=[self.task_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 75)
+
+    def test_open_session_not_counted(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._open_timer_entry(owner=self.user, task=self.task_a)
+        response = self.client.get(reverse("task-detail", args=[self.task_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 30)
+
+    def test_list_sums_each_task_separately(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._manual_entry(owner=self.user, task=self.task_b, minutes=45)
+        response = self.client.get(reverse("task-list"), {"project": self.project_a.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        minutes = {e["id"]: e["logged_minutes"] for e in response.data}
+        self.assertEqual(minutes[self.task_a.id], 30)
+        self.assertEqual(minutes[self.task_b.id], 45)
+
+    def test_create_response_includes_logged_minutes(self):
+        response = self.client.post(
+            reverse("task-list"), {"project": self.project_a.id, "title": "New Task"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["logged_minutes"], 0)
+
+    def test_update_response_keeps_logged_minutes(self):
+        # A non-zero total on purpose: with no entries, a response that wrongly
+        # reset the total to 0 would still pass.
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._stopped_timer_entry(owner=self.user, task=self.task_a, minutes=45)
+        response = self.client.patch(
+            reverse("task-detail", args=[self.task_a.id]), {"title": "New Task"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 75)

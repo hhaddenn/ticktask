@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
@@ -17,6 +18,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             archived = self.request.query_params.get("archived") == "true"
             projects = projects.filter(archived_at__isnull=not archived)
+        # Same rule as TaskViewSet: open timer sessions (minutes=NULL) don't count.
+        # Only one Sum on purpose: a second aggregate over another relation would
+        # multiply the joined rows and inflate this total.
+        projects = projects.annotate(logged_minutes=Sum("tasks__time_entries__minutes", default=0))
         return projects
 
     def perform_create(self, serializer):
@@ -29,6 +34,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     Stage(project=project, name="Done", sequence=2, is_done=True),
                 ]
             )
+        # Re-read for the logged_minutes annotation (see TaskViewSet.perform_create).
+        # Outside the transaction: it only reads, and the transaction should hold just
+        # the writes that must succeed or fail together (project and its stages).
+        serializer.instance = self.get_queryset().get(id=project.id)
+
+    def perform_update(self, serializer):
+        project = serializer.save()
+        # Same as perform_create: without this, the PATCH response has no logged_minutes.
+        serializer.instance = self.get_queryset().get(id=project.id)
 
     @action(detail=True, methods=["post"])
     def archive(self, request, pk=None):
@@ -54,6 +68,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         project = self.request.query_params.get("project")
         if project and project.isdigit():
             tasks = tasks.filter(project__id=project)
+        # Only logged (rounded) minutes count: an open timer session has minutes=NULL
+        # until stop, and Sum skips NULLs (timer.md rule 4). The live timer shows it.
+        tasks = tasks.annotate(logged_minutes=Sum("time_entries__minutes", default=0))
         return tasks
 
     @action(detail=True, methods=["post"])
@@ -75,6 +92,17 @@ class TaskViewSet(viewsets.ModelViewSet):
                 t.sequence = i
             Task.objects.bulk_update(tasks, ["stage", "sequence"])
         return Response(self.get_serializer(task).data)
+
+    def perform_create(self, serializer):
+        task = serializer.save()
+        # save() returns the task without the logged_minutes annotation, and DRF
+        # silently drops a read-only field it can't find. Re-read it from get_queryset.
+        serializer.instance = self.get_queryset().get(id=task.id)
+
+    def perform_update(self, serializer):
+        task = serializer.save()
+        # Same as perform_create: without this, the PATCH response has no logged_minutes.
+        serializer.instance = self.get_queryset().get(id=task.id)
 
 
 class StageViewSet(viewsets.ReadOnlyModelViewSet):
