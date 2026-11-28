@@ -56,7 +56,7 @@ As estimativas deste plano são **preliminares**, feitas pelo Claude para dar um
 | 21  | M3    | Aviso de timer ativo noutra tarefa                                                                                        | Must      | 2 h        | 1h25min | feito                 |
 | 22  | M3    | Aviso de sessão esquecida                                                                                                 | Must      | 2 h        | 2h15min | feito                 |
 | 23  | M3    | Registos de tempo manuais                                                                                                 | Must      | 4 h        | 3h30min | feito                 |
-| 24  | M3    | Totais de horas por tarefa e por projeto                                                                                  | Must      | 4 h        |         | por fazer             |
+| 24  | M3    | Totais de horas por tarefa e por projeto                                                                                  | Must      | 4 h        | 3h30min | feito                 |
 | 24b | M3    | Estimativa no formulário da tarefa e estimado vs. real                                                                    | Must      | 2 h        |         | por fazer             |
 | 25  | M3    | Preferências: bloco de arredondamento                                                                                     | Must      | 1 h        |         | por fazer             |
 | 26  | M4    | Dockerfiles do backend e do frontend (`arm64`)                                                                            |           | 4 h        |         | por fazer             |

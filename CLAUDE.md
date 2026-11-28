@@ -10,7 +10,7 @@ Os guias referidos nelas estão em ~/Desktop/Projects/devHelper/docs/.
 - **O que é:** gestão de projetos, tarefas e backlog (bugs e sugestões recebidos por email), com registo de horas e timer por tarefa. Vista kanban com drag and drop, inspirada no Odoo.
 - **Tipo:** pessoal
 - **Cliente:** nenhum, é para mim
-- **Estado:** desenvolvimento (M1: setup)
+- **Estado:** desenvolvimento (M3: timer e registo de tempo)
 
 ## Âmbito (pessoal)
 
@@ -50,15 +50,16 @@ Notas:
 - `backend/`: projeto Django (API)
   - `config/`: settings, URLs, WSGI/ASGI (só configuração)
   - `accounts/`: `User` próprio e preferências, e a autenticação por sessão em `/api/auth/` (`me/`, `login/`, `logout/`)
-  - `projects/`: `Project`, `Stage` e `Task`, com a API em `/api/` (`projects/`, `stages/`, `tasks/`), incluindo arquivar projetos e mover tarefas no kanban
+  - `projects/`: `Project`, `Stage` e `Task`, com a API em `/api/` (`projects/`, `stages/`, `tasks/`), incluindo arquivar projetos e mover tarefas no kanban. Tarefas e projetos trazem o total de horas lançadas (`logged_minutes`, anotado no `get_queryset`; o `POST`/`PATCH` voltam a ler o objeto para o incluir)
   - `timesheets/`: `TimeEntry` (sessão / lançamento de horas) e `TimerInterval` (período a correr), com as constraints do timer na base de dados (um timer aberto por utilizador, um intervalo a correr por sessão). API do timer em `/api/timer/` (`GET` devolve a sessão aberta, com `is_forgotten` se for de um dia anterior em Lisboa, ou 204 se não houver; `start/`, `pause/`, `resume/`, `stop/`), com a lógica em `services.py`, incluindo o arredondamento do total no stop. O `stop/` aceita um `ended_at` opcional, para as sessões esquecidas: dá 400 se a hora for inválida (no futuro, ou antes do intervalo a correr) e 409 se a sessão estiver em pausa. Registos de horas em `/api/time-entries/` (`TimeEntryViewSet` + `TimeEntryRecordSerializer`): listar (`?task=`), criar registos manuais, corrigir (`PATCH`) e apagar. A sessão aberta não aparece aqui (404)
 - `docker-compose.dev.yml`: Postgres para desenvolvimento
 - `frontend/`: aplicação React (Vite, JavaScript, ESLint, Prettier com tabs)
   - `src/components/AppLayout.jsx`: cabeçalho e rotas, só depois do login. Chama o `useTimer` e mostra o aviso de sessão esquecida
-  - `src/hooks/useTimer.js`: estado do timer (sessão aberta e âncora `syncedAt`) e as ações start, pause, resume e stop (com hora de fim opcional), mais `stopAndRestart`, `dismissForgotten` e o derivado `isForgotten`. Chamado uma só vez, no `AppLayout`, e passado por props
+  - `src/hooks/useTimer.js`: estado do timer (sessão aberta e âncora `syncedAt`) e as ações start, pause, resume e stop (com hora de fim opcional), mais `stopAndRestart`, `dismissForgotten`, o derivado `isForgotten` e `lastStopped` (a última sessão parada, para as páginas atualizarem o total dessa tarefa). Chamado uma só vez, no `AppLayout`, e passado por props
   - `src/components/ForgottenSessionDialog.jsx`: aviso de sessão esquecida, com a hora de fim (só com a sessão a correr) e as três opções da regra 10 da [timer.md](docs/timer.md)
   - `src/components/TimerDisplay.jsx`: contador ao vivo, derivado do `elapsed_seconds` do servidor mais o tempo local desde a resposta
-  - `src/components/TimeEntryList.jsx`: registos de horas da tarefa, no dialog de editar tarefa. Vai buscar os seus dados e trata de editar (uma linha de cada vez, `editingId`) e apagar
+  - `src/components/TimeEntryList.jsx`: registos de horas da tarefa, no dialog de editar tarefa. Vai buscar os seus dados e trata de editar (uma linha de cada vez, `editingId`) e apagar. Chama `onEntriesChanged` depois de guardar ou apagar, para o kanban voltar a pedir a tarefa
+  - `src/pages/ProjectKanbanPage.jsx`: kanban do projeto. O total no título é derivado das tarefas carregadas; `refreshTask` volta a pedir uma tarefa depois de mudanças nos registos, e um efeito sobre `timer.lastStopped` faz o mesmo depois de um stop
   - `src/components/TimeEntryForm.jsx`: adicionar um registo manual (sem `entry`) ou corrigir um registo (com `entry`; a data fica bloqueada nas sessões do timer)
   - `src/timer.js`: `formatDuration` (segundos → `H:MM:SS`) e `formatMinutes` (minutos → `H:MM`), os dois como exports com nome
 - `docs/`: plano, ADRs, registo de horas

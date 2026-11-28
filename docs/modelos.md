@@ -171,6 +171,16 @@ TimeEntry  (tarefa X, 2026-11-06, 7h15 arredondado)
   - **Projeto arquivado:** corrigir continua a ser possível, para acertar horas antigas. Só criar é que é bloqueado.
 - **Apagar:** qualquer registo fechado, manual ou do timer. Os intervalos vão com ele (`CASCADE`).
 
+**Totais de horas (tarefa 24):**
+
+- **`logged_minutes`** nas tarefas e nos projetos (`/api/tasks/` e `/api/projects/`): a soma de `TimeEntry.minutes`, anotada com `Sum(..., default=0)` no `get_queryset` (`time_entries__minutes` nas tarefas, `tasks__time_entries__minutes` nos projetos). Sem registos, dá `0` e não `null`.
+- **Calculado, não guardado:** não há coluna de total. Uma cópia guardada teria de ser atualizada em cada stop, registo novo, correção e apagamento, e um dia ficava diferente da soma real.
+- **Só conta o tempo lançado:** a sessão aberta tem `minutes` a `NULL` até ao stop, e o `Sum` ignora os `NULL`. O que está a correr só aparece no contador ao vivo, e entra no total já arredondado (regra 4).
+- **`POST` e `PATCH` voltam a ler o objeto** pelo `get_queryset` (`perform_create` / `perform_update`). O `save()` devolve-o sem a anotação, e o DRF omite sem aviso um campo `read_only` que não encontra.
+- **Um só `Sum` por queryset:** um segundo agregado sobre outra relação (ex: documentos do projeto) multiplicava as linhas do `JOIN` e inflacionava o total. Se for preciso, usa-se uma `Subquery`.
+- **Projeto arquivado:** o total continua a aparecer. Arquivar não apaga horas.
+- **No frontend:** o cartão mostra o total só quando é maior do que 0. O título do kanban soma as tarefas já carregadas (valor derivado, sem estado próprio). A tarefa volta a ser pedida à API depois de mudanças nos registos e depois de um stop, em vez de o React somar os minutos.
+
 ### `TimerInterval` (período a correr)
 
 | Campo             | Tipo                   | Obrigatório? | Omissão | Notas                                                                                             |
