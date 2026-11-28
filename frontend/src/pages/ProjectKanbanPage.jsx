@@ -19,6 +19,7 @@ export default function ProjectKanbanPage({ timer }) {
 	const [error, setError] = useState(null);
 	const [editingTask, setEditingTask] = useState(null);
 	const [moveError, setMoveError] = useState(null);
+	const [refreshError, setRefreshError] = useState(null);
 
 	useEffect(() => {
 		let ignore = false;
@@ -99,6 +100,25 @@ export default function ProjectKanbanPage({ timer }) {
 		}
 	}
 
+	// Re-fetches instead of adding the minutes here: the server owns the total
+	// (rounding, open sessions), so the card shows exactly what the API sums.
+	async function refreshTask(taskId) {
+		try {
+			const task = await apiFetch(`/api/tasks/${taskId}/`);
+			// prevTasks, not tasks: a drag and drop may have changed the list while the
+			// request was in flight, and this render's tasks would undo it.
+			setTasks((prevTasks) =>
+				prevTasks.map((t) => (t.id === task.id ? task : t)),
+			);
+			setRefreshError(null);
+		} catch (err) {
+			setRefreshError(
+				"Couldn't refresh the task's total. Reload the page.",
+			);
+			console.error(err);
+		}
+	}
+
 	const pendingTask = tasks.find((t) => t.id === timer.pendingTaskId);
 	const loggedMinutes = tasks.reduce(
 		(sum, task) => sum + task.logged_minutes,
@@ -150,13 +170,23 @@ export default function ProjectKanbanPage({ timer }) {
 									onCancel={closeDialog}
 									onSaved={handleTaskSaved}
 								/>
-								<TimeEntryList taskId={editingTask.id} />
+								<TimeEntryList
+									taskId={editingTask.id}
+									onEntriesChanged={() =>
+										refreshTask(editingTask.id)
+									}
+								/>
 							</div>
 						)}
 					</Dialog>
 					{moveError && (
 						<p className="text-sm text-red-600 dark:text-red-400">
 							{moveError}
+						</p>
+					)}
+					{refreshError && (
+						<p className="text-sm text-red-600 dark:text-red-400">
+							{refreshError}
 						</p>
 					)}
 					{timer.error && (

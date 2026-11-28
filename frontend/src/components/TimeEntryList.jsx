@@ -4,7 +4,7 @@ import { formatMinutes } from "../timer";
 import TimeEntryForm from "./TimeEntryForm";
 import Button from "./ui/Button";
 
-export default function TimeEntryList({ taskId }) {
+export default function TimeEntryList({ taskId, onEntriesChanged }) {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const [entryList, setEntryList] = useState([]);
@@ -22,6 +22,7 @@ export default function TimeEntryList({ taskId }) {
 		].sort((a, b) => b.date.localeCompare(a.date));
 		setEntryList(list);
 		setEditingId(null);
+		onEntriesChanged();
 	}
 
 	async function handleDelete(entry) {
@@ -34,6 +35,7 @@ export default function TimeEntryList({ taskId }) {
 			});
 			setEntryList(entryList.filter((e) => e.id !== entry.id));
 			setActionError(null);
+			onEntriesChanged();
 		} catch (err) {
 			setActionError(err.data?.detail ?? err.message);
 		}
