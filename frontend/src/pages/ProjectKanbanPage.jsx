@@ -8,6 +8,7 @@ import { DragDropContext } from "@hello-pangea/dnd";
 import moveTask from "../kanban";
 import TimerConflictDialog from "../components/TimerConflictDialog";
 import TimeEntryList from "../components/TimeEntryList";
+import { formatMinutes } from "../timer";
 
 export default function ProjectKanbanPage({ timer }) {
 	const { projectId } = useParams();
@@ -99,6 +100,10 @@ export default function ProjectKanbanPage({ timer }) {
 	}
 
 	const pendingTask = tasks.find((t) => t.id === timer.pendingTaskId);
+	const loggedMinutes = tasks.reduce(
+		(sum, task) => sum + task.logged_minutes,
+		0,
+	);
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -122,12 +127,20 @@ export default function ProjectKanbanPage({ timer }) {
 						<h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
 							{project.name}
 						</h2>
+						<span className="text-sm text-slate-500 dark:text-slate-400">
+							<span>Logged </span>
+							<span className="font-mono tabular-nums">
+								{formatMinutes(loggedMinutes)}
+							</span>
+						</span>
+
 						{project.archived_at && (
 							<span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
 								Archived
 							</span>
 						)}
 					</div>
+
 					<Dialog open={editingTask !== null} onClose={closeDialog}>
 						{editingTask && (
 							<div className="flex flex-col gap-4">
