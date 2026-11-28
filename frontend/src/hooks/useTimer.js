@@ -11,11 +11,19 @@ export default function useTimer() {
 	const [error, setError] = useState(null);
 	const [pendingTaskId, setPendingTaskId] = useState(null);
 	const [forgottenDismissed, setForgottenDismissed] = useState(false);
+	// The last session the server closed, so pages can refresh that task's total.
+	// A new object on every stop, even for the same task, so an effect that
+	// depends on it runs once per stop. Stops can come from places that don't
+	// know about the page (the forgotten session dialog lives in AppLayout).
+	const [lastStopped, setLastStopped] = useState(null);
 
 	function applyResponse(data) {
 		// Stop returns the closed session; for the UI that means "no timer".
-		if (data === null || data.state === "stopped") {
+		if (data === null) {
 			setEntry(null);
+		} else if (data.state === "stopped") {
+			setEntry(null);
+			setLastStopped(data);
 		} else {
 			setEntry(data);
 		}
@@ -175,5 +183,6 @@ export default function useTimer() {
 		dismissForgotten,
 		stopAndRestart,
 		isForgotten,
+		lastStopped,
 	};
 }

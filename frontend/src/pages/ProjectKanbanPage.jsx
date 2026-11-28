@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useEffectEvent } from "react";
 import { apiFetch } from "../api";
 import KanbanColumn from "../components/KanbanColumn";
 import TaskForm from "../components/TaskForm";
@@ -100,24 +100,65 @@ export default function ProjectKanbanPage({ timer }) {
 		}
 	}
 
+	function applyFreshTask(task) {
+		// prevTasks, not tasks: a drag and drop may have changed the list while the
+		// request was in flight, and this render's tasks would undo it.
+		setTasks((prevTasks) =>
+			prevTasks.map((t) => (t.id === task.id ? task : t)),
+		);
+		setRefreshError(null);
+	}
+
+	function showRefreshError(err) {
+		console.error(err);
+		setRefreshError("Couldn't refresh the task's total. Reload the page.");
+	}
+
 	// Re-fetches instead of adding the minutes here: the server owns the total
 	// (rounding, open sessions), so the card shows exactly what the API sums.
 	async function refreshTask(taskId) {
 		try {
-			const task = await apiFetch(`/api/tasks/${taskId}/`);
-			// prevTasks, not tasks: a drag and drop may have changed the list while the
-			// request was in flight, and this render's tasks would undo it.
-			setTasks((prevTasks) =>
-				prevTasks.map((t) => (t.id === task.id ? task : t)),
-			);
-			setRefreshError(null);
+			applyFreshTask(await apiFetch(`/api/tasks/${taskId}/`));
 		} catch (err) {
-			setRefreshError(
-				"Couldn't refresh the task's total. Reload the page.",
-			);
-			console.error(err);
+			showRefreshError(err);
 		}
 	}
+
+	// An effect event: the effect reads the latest tasks through it without
+	// depending on them, so it runs once per stop and not on every task change.
+	const isOnThisPage = useEffectEvent((taskId) =>
+		tasks.some((t) => t.id === taskId),
+	);
+
+	// Refreshes the stopped task's total, whichever place the stop came from (the
+	// card, the conflict dialog or the forgotten session dialog in AppLayout).
+	// Fetches here instead of calling refreshTask: the lint rule
+	// react-hooks/set-state-in-effect only allows setState in a callback of the
+	// effect (the .then), not in a function the effect calls directly.
+	useEffect(() => {
+		const taskId = timer.lastStopped?.task;
+		// The timer is app-wide: a stop on another project's task has nothing to
+		// refresh here.
+		if (!taskId || !isOnThisPage(taskId)) {
+			return;
+		}
+		let ignore = false;
+		apiFetch(`/api/tasks/${taskId}/`).then(
+			(task) => {
+				if (!ignore) {
+					applyFreshTask(task);
+				}
+			},
+			(err) => {
+				if (!ignore) {
+					showRefreshError(err);
+				}
+			},
+		);
+		return () => {
+			ignore = true;
+		};
+	}, [timer.lastStopped]);
 
 	const pendingTask = tasks.find((t) => t.id === timer.pendingTaskId);
 	const loggedMinutes = tasks.reduce(
