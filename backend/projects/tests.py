@@ -398,18 +398,7 @@ class TaskApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class TaskLoggedMinutesTests(APITestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = get_user_model().objects.create_user(username="testuser", password="test")
-        cls.project_a = Project.objects.create(owner=cls.user, name="Project A")
-        cls.stage_a = Stage.objects.create(project=cls.project_a, name="Stage A")
-        cls.task_a = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task A")
-        cls.task_b = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task B")
-
-    def setUp(self):
-        self.client.force_authenticate(user=self.user)
-
+class TimeEntryHelpersMixin:
     def _manual_entry(self, owner, task, date=None, minutes=30):
         date = date or timezone.localdate()
         return TimeEntry.objects.create(
@@ -437,6 +426,19 @@ class TaskLoggedMinutesTests(APITestCase):
         date = date or timezone.localdate()
         started_at = timezone.now()
         return TimeEntry.objects.create(owner=owner, task=task, date=date, started_at=started_at)
+
+
+class TaskLoggedMinutesTests(TimeEntryHelpersMixin, APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="testuser", password="test")
+        cls.project_a = Project.objects.create(owner=cls.user, name="Project A")
+        cls.stage_a = Stage.objects.create(project=cls.project_a, name="Stage A")
+        cls.task_a = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task A")
+        cls.task_b = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task B")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
 
     def test_task_without_entries_has_zero(self):
         response = self.client.get(reverse("task-detail", args=[self.task_a.id]))
@@ -480,6 +482,67 @@ class TaskLoggedMinutesTests(APITestCase):
         self._stopped_timer_entry(owner=self.user, task=self.task_a, minutes=45)
         response = self.client.patch(
             reverse("task-detail", args=[self.task_a.id]), {"title": "New Task"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 75)
+
+
+class ProjectLoggedMinutesTests(TimeEntryHelpersMixin, APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = get_user_model().objects.create_user(username="testuser", password="test")
+        cls.project_a = Project.objects.create(owner=cls.user, name="Project A")
+        cls.stage_a = Stage.objects.create(project=cls.project_a, name="Stage A")
+        cls.task_a = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task A")
+        cls.task_b = Task.objects.create(project=cls.project_a, stage=cls.stage_a, title="Task B")
+        cls.project_b = Project.objects.create(owner=cls.user, name="Project B")
+        cls.stage_b = Stage.objects.create(project=cls.project_b, name="Stage B")
+        cls.task_c = Task.objects.create(project=cls.project_b, stage=cls.stage_b, title="Task C")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def test_project_without_entries_has_zero(self):
+        response = self.client.get(reverse("project-detail", args=[self.project_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 0)
+
+    def test_sums_entries_across_tasks(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._stopped_timer_entry(owner=self.user, task=self.task_b, minutes=45)
+        response = self.client.get(reverse("project-detail", args=[self.project_a.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["logged_minutes"], 75)
+
+    def test_list_sums_each_project_separately(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._manual_entry(owner=self.user, task=self.task_c, minutes=45)
+        response = self.client.get(reverse("project-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        minutes = {e["id"]: e["logged_minutes"] for e in response.data}
+        self.assertEqual(minutes[self.project_a.id], 30)
+        self.assertEqual(minutes[self.project_b.id], 45)
+
+    def test_archived_list_includes_total(self):
+        self.project_b.archived_at = timezone.now()
+        self.project_b.save()
+        self._manual_entry(owner=self.user, task=self.task_c, minutes=45)
+        response = self.client.get(reverse("project-list"), {"archived": "true"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        minutes = {e["id"]: e["logged_minutes"] for e in response.data}
+        self.assertNotIn(self.project_a.id, minutes)
+        self.assertEqual(minutes[self.project_b.id], 45)
+
+    def test_create_response_includes_logged_minutes(self):
+        response = self.client.post(reverse("project-list"), {"name": "New Project"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["logged_minutes"], 0)
+
+    def test_update_response_keeps_logged_minutes(self):
+        self._manual_entry(owner=self.user, task=self.task_a, minutes=30)
+        self._manual_entry(owner=self.user, task=self.task_b, minutes=45)
+        response = self.client.patch(
+            reverse("project-detail", args=[self.project_a.id]), {"name": "New name"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["logged_minutes"], 75)
